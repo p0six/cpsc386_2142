@@ -57,6 +57,7 @@ menu_buttons = []
 ########################################################################################################################
 
 pygame.init()
+
 pygame.display.set_caption(GAME_TITLE)  # title of the window...
 screen = pygame.display.set_mode([DISPLAY_WIDTH, DISPLAY_HEIGHT])
 clock = pygame.time.Clock()
@@ -115,17 +116,17 @@ def game_menu():
 
         # Draw help if requested..
         if display_help is True:
-            rules_img = pygame.image.load('rules.png').convert()
+            rules_img = pygame.image.load('images/rules.png').convert()
             rules_blit = pygame.transform.scale(rules_img, (800, 600))
             screen.blit(rules_blit, (0, 0))
 
         # Load background image..
-        bg_img = pygame.image.load('menuBackground.png').convert()
+        bg_img = pygame.image.load('images/menuBackground.png').convert()
         bg_blit = pygame.transform.scale(bg_img, (1024, 768))
         screen.blit(bg_blit, (0, 0))
 
         # Adding buttons....
-        menu_font = pygame.font.Font('Off The Haze.otf', 70)
+        menu_font = pygame.font.Font('fonts/Off The Haze.otf', 70)
         start_game_text= menu_font.render('Start Game', True, WHITE)
         start_game_rect = start_game_text.get_rect()  # get rect, byoch!
         start_game_rect.center = ((DISPLAY_WIDTH / 2), 300)
@@ -150,13 +151,13 @@ def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
     global img_scroller_one
     global img_scroller_two
     global bg_bool
-    bg_img = pygame.image.load('gameBackground.png').convert()
+    bg_img = pygame.image.load('images/gameBackground.png').convert()
     bg_blit = pygame.transform.scale(bg_img, (1024, 768))
     screen.blit(bg_blit, (0, 0))
 
     # Need to make this render based on vertical position in img_scroller vars
-    gamespace_img_one = pygame.image.load('gamespace1_Test.png').convert()
-    gamespace_img_two = pygame.image.load('gamespace2_Test.png').convert()
+    gamespace_img_one = pygame.image.load('images/gamespace1_Test.png').convert()
+    gamespace_img_two = pygame.image.load('images/gamespace2_Test.png').convert()
     gamespace_imgs = [gamespace_img_one, gamespace_img_two]
 
     gamespace_one_blit = pygame.transform.scale(gamespace_imgs[not bg_bool], (512, 768))
@@ -165,28 +166,21 @@ def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
     gamespace_two_blit = pygame.transform.scale(gamespace_imgs[bg_bool], (512, 768))
     screen.blit(gamespace_two_blit, (256, img_scroller_one - 768))
 
-
-    if (img_scroller_one >= 768):
+    if img_scroller_one >= 768:
         img_scroller_one = 0
         bg_bool = not bg_bool
     else:
         img_scroller_one += 4
-
-    # cropped = pygame.Surface((512, DISPLAY_HEIGHT))
-    # cropped.blit(gamespace_img_one, (0, 0), (0, 0, 512, img_scroller_two))
-    # screen.blit(cropped, (256, 0), (0, 0, 512, img_scroller_two))
-    img_scroller_two -= 4
-
-
-    # gamespace_img_two = pygame.image.load('gamespace2_Test.png').convert()
-    # gamespace_two_blit = pygame.transform.scale(gamespace_img_two, (512, 768))
-    # screen.blit(gamespace_two_blit, (256, 0))
 
     # This must run after all draw commands
     pygame.display.flip()
 
 
 def game_loop():
+    pygame.mixer.music.load('sounds/oakenfold.ogg')
+    pygame.mixer.music.play(-1)
+
+
     continue_loop = True  # potentially change until while lines_remaining != nil
     while continue_loop:
         clock.tick(500)  # limits while loop to 10 iterations/second
