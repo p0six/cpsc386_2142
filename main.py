@@ -179,7 +179,7 @@ def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
 def game_loop():
     pygame.mixer.music.load('sounds/oakenfold.ogg')
     pygame.mixer.music.play(-1, 154.052)
-    pygame.mixer.music.set_volume(0.032)
+    pygame.mixer.music.set_volume(0.232)
 
 
     continue_loop = True  # potentially change until while lines_remaining != nil
