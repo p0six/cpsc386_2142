@@ -2,10 +2,10 @@
 #
 # Project           : Simple New VG in Pygame
 #
-# Program Name      : 2142.py
+# File Name         : 2142.py
 #
-# Author            : diegofranchi, mikeromero
-# CWID              : 889894283, 
+# Author            : diegofranchi
+# CWID              : 889894283
 #
 # Date Created      : 20180413
 #
@@ -19,11 +19,11 @@
 ############################################################################################
 
 import pygame
-import time
-from random import shuffle
+#import time
+#from random import shuffle
 
 pygame.init()
-pygame.mixer.init()
+#pygame.mixer.init()
 
 width = 1024
 height = 768
@@ -31,6 +31,9 @@ height = 768
 black = (0,0,0)
 white = (255,255,255)
 
+screen = pygame.display.set_mode((width,height))
+pygame.display.set_caption('2142 v0.0.1')
+clock = pygame.time.Clock()
 
 # def text_objects(text, font):
     # textSurface = font.render(text, True, black)
@@ -38,34 +41,41 @@ white = (255,255,255)
 
     
     
-class Power_Ups: #***[1]***
+class PowerUps: #***[1]***
     def __init__(self):
+        self.length =
+        self.width =
         self.type = 
 
 
 class Bullet: #***[1]***
-    def __init__(self):
+    def __init__(self, length=5, width=5, ):
         self.length = 
         self.width = 
         self.area = 
-        self.damange = 
-        self.direction = 
+        self.damage =
+        self.angle =
         self.speed =
-        self.img = 
+        self.image =
 
         
 class Gun: #***[1]***
     def __init__(self):
         self.type = 
-        self.rate = 
+        self.fire_rate =
     
     
 class Ship: #***[1]***
-    def __init___(self, numGun):
-        self.type =
-        self.image =
-        self.guns = [Gun(value) for value in range(numGun)]
-      
+    def __init___(self, type):
+        self.name = type
+        self.setImage()
+        self.setGuns()
+    def setImage(self):
+        if self.name == 'ship_name':
+            self.image = pygame.image.load('images/'+self.name)
+    def setGuns(self):
+        if self.name == 'ship_name':
+            self.guns = [Gun(value) for value in range(type)]
         
 
 class Enemy: #***[1]***
@@ -74,10 +84,7 @@ class Enemy: #***[1]***
         self.spawn_location = 
         self.angle = 
         self.speed =
-        self.hp = 
-    def __len__(self):
-        
-
+        self.hp =
 
 
 class Player: #***[1]***
@@ -90,6 +97,7 @@ class Player: #***[1]***
 class Game: #***[1]***
     def __init__(self):
         self.level_complete = False
+        self.game_loop()
     def game_loop(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -100,9 +108,11 @@ class Game: #***[1]***
                 if event.key == pygame.K_a or event.key == pygame.K_LEFT:
                 if event.key == pygame.K_s or event.key == pygame.K_DOWN:
                 if event.key == pygame.K_d or event.key == pygame.K_RIGHT:
-                
+        self.draw_game()
     def draw_game(self):
-        
+        screen.fill(white)
+        pygame.display.update()
+        clock.tick(60)
     
     
 class Menu: #***[1]***
@@ -110,7 +120,7 @@ class Menu: #***[1]***
         self.draw_menu()
     def draw_menu(self):
         screen.fill(white)
-        python.display.update()
+        pygame.display.update()
         clock.tick(60)
 
 
