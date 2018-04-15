@@ -63,12 +63,20 @@ class Bullet:
         self.x, self.y = self.location
         self.damage = 1
         self.angle = 1
-        self.speed = 1
+        self.speed = 24
 
     def set_location(self, x, y):
         self.location = (self.x, self.y)
         self.x = x
         self.y = y
+
+    def next_location(self):
+        if self.y - self.speed + self.rect.height < 0:
+            active_bullets.remove(self)
+            return (-200, -200)
+        self.set_location(self.x, self.y - self.speed)
+        return self.location
+
 
 
 class Player: #***[1]***
@@ -81,11 +89,40 @@ class Player: #***[1]***
         self.speed = 8
         self.hp = 100
 
+    def fire(self, image):
+        return Bullet(image,(self.x + self.rect.width / 2, self.y - self.rect.height / 2))
+
+
     def set_location(self, x, y):
+        if x < 256 or x > 768 - self.rect.width or y < 0 or y > DISPLAY_HEIGHT - self.rect.height:
+            return
         self.location = (self.x, self.y)
         self.x = x
         self.y = y
 
+    def up(self):
+        self.set_location(self.x, self.y - self.speed)
+
+    def down(self):
+        self.set_location(self.x, self.y + self.speed)
+
+    def left(self):
+        self.set_location(self.x - self.speed, self.y)
+
+    def right(self):
+        self.set_location(self.x + self.speed, self.y)
+
+    def up_left(self):
+        self.set_location(self.x - self.speed, self.y - self.speed)
+
+    def up_right(self):
+        self.set_location(self.x + self.speed, self.y - self.speed)
+
+    def down_left(self):
+        self.set_location(self.x - self.speed, self.y + self.speed)
+
+    def down_right(self):
+        self.set_location(self.x + self.speed, self.y + self.speed)
 
 ########################################################################################################################
 # Do some things once, and never again, in order to save CPU time.
@@ -140,16 +177,16 @@ def game_menu():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return False
-            elif event.type == KEYDOWN:
-                if event.key == K_ESCAPE:
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
                     if display_help is True:
                         display_help = False
                     else:
                         return False
-                elif event.key == K_RETURN: # should reset all game values here...
+                elif event.key == pygame.K_RETURN: # should reset all game values here...
                     player_score = 0
                     return True
-                elif event.key == K_h:
+                elif event.key == pygame.K_h:
                     display_help = True
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 button_clicked = evaluate_menu_click(event)
@@ -185,12 +222,17 @@ def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
     screen.blit(gamespace_img_blits[bg_bool], (256, img_scroller_one - DISPLAY_HEIGHT))
 
     screen.blit(player_blue.image, player_blue.location)
+
+    for bullet in active_bullets:
+        screen.blit(bullet.image, bullet.next_location())
+
     # laserBlue01 = Bullet('images/SpaceShooterRedux/PNG/Lasers/laserBlue01.png', player_blue.rect.center)
     # screen.blit(laserBlue01.image, laserBlue01.location)
 
     # This must run after all draw commands
     pygame.display.flip()
 
+    # We can use this to scroll two images together infinitely...
     if img_scroller_one >= DISPLAY_HEIGHT:
         img_scroller_one = 0
         bg_bool = not bg_bool
@@ -206,40 +248,34 @@ def game_loop():
     while continue_loop:
         keys = pygame.key.get_pressed()
         if keys[pygame.K_UP] or keys[pygame.K_w]:
-            print('up is held')
             if keys[pygame.K_LEFT] or keys[pygame.K_a]:
-                print('left is also held')
-                player_blue.set_location(player_blue.x - player_blue.speed, player_blue.y - player_blue.speed)
+                player_blue.up_left()
             elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
-                print('right is also held')
-                player_blue.set_location(player_blue.x + player_blue.speed, player_blue.y - player_blue.speed)
+                player_blue.up_right()
             else:
-                player_blue.set_location(player_blue.x, player_blue.y - player_blue.speed)
+                player_blue.up()
         elif keys[pygame.K_DOWN] or keys[pygame.K_s]:
-            print('down is held')
             if keys[pygame.K_LEFT] or keys[pygame.K_a]:
-                print('left is also held')
-                player_blue.set_location(player_blue.x - player_blue.speed, player_blue.y + player_blue.speed)
+                player_blue.down_left()
             elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
-                print('right is also held')
-                player_blue.set_location(player_blue.x + player_blue.speed, player_blue.y + player_blue.speed)
+                player_blue.down_right()
             else:
-                player_blue.set_location(player_blue.x, player_blue.y + player_blue.speed)
+                player_blue.down()
         elif keys[pygame.K_LEFT] or keys[pygame.K_a]:
-            print('left is held')
-            player_blue.set_location(player_blue.x - player_blue.speed, player_blue.y)
+            player_blue.left()
         elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
-            print('right is held')
-            player_blue.set_location(player_blue.x + player_blue.speed, player_blue.y)
+            player_blue.right()
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return False
-            elif event.type == KEYDOWN:
-                if event.key == K_ESCAPE:
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
                     pygame.mixer.music.fadeout(4)
                     pygame.mixer.music.stop()
                     return False
+                elif event.key == pygame.K_SPACE:
+                    active_bullets.append(player_blue.fire('images/SpaceShooterRedux/PNG/Lasers/laserBlue01.png'))
 
         draw_game()
 
