@@ -75,6 +75,8 @@ gamespace_one_blit = pygame.transform.scale(gamespace_img_one, (512, 768))
 gamespace_img_two = pygame.image.load('images/gamespace2_Test.png').convert()
 gamespace_two_blit = pygame.transform.scale(gamespace_img_two, (512, 768))
 gamespace_img_blits = [gamespace_one_blit, gamespace_two_blit]
+pygame.mixer.music.load('sounds/oakenfold.ogg')
+pygame.mixer.music.set_volume(0.232)
 
 
 def evaluate_menu_click(event):  # rectangle's: (top left x, top left y, width, height)
@@ -157,7 +159,6 @@ def process_play():
 
 def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
     global img_scroller_one
-    global img_scroller_two
     global bg_bool
     screen.blit(game_bg_blit, (0, 0))
 
@@ -176,9 +177,7 @@ def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
 
 
 def game_loop():
-    pygame.mixer.music.load('sounds/oakenfold.ogg')
     pygame.mixer.music.play(-1, 154.055)
-    pygame.mixer.music.set_volume(0.232)
 
     continue_loop = True  # potentially change until while lines_remaining != nil
     while continue_loop:
