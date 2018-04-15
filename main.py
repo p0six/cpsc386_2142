@@ -7,8 +7,12 @@
 # April 17, 2018
 # ######################################################################################################################
 # TODO: Explosion animation with sprites!
-# TODO: Spaceships need health, and we need to be able to adjust it as things get hit. also display health..
-# TODO: If health runs out... game should end. Check if player score higher than enemy score to determine win condition.
+# TODO: Spaceships need health, and we need to be able to adjust it as things get hit.
+# DONE: If health runs out... game should end.
+# DONE: Health display
+# TODO: Check if player score higher than enemy score to determine win condition.
+# TODO: display game over screen with final score and win conditional
+# TODO:
 # TODO: Add PowerUps / Different Weapons with different trajectories, additional bullets, and strength
 # TODO: Add a bunny!
 # ######################################################################################################################
@@ -96,6 +100,7 @@ class Enemy:
         self.velocity_y = random.randint(self.min_speed + 1, self.max_speed)  # always want this value a positive...
         self.x, self.y = (random.randint(0, 512 - self.rect.width), 0 - self.rect.height)
         self.active_bullets = []
+        self.weapon_charge = 0
 
     def set_location(self, x, y):
         self.x = x
@@ -117,10 +122,15 @@ class Enemy:
         return self.x, self.y
 
     def fire(self, image):
-        my_bullet = EnemyBullet(image, (self.x + self.rect.width / 2, self.y + self.rect.height / 2),
+        if self.weapon_charge == 20:
+            my_bullet = EnemyBullet(image, (self.x + self.rect.width / 2, self.y + self.rect.height / 2),
                                 (self.velocity_x, self.velocity_y), self.x_increasing)
-        self.active_bullets.append(my_bullet)
-        return my_bullet
+            self.active_bullets.append(my_bullet)
+            self.weapon_charge = 0
+            return my_bullet
+        else:
+            self.weapon_charge += 1
+        return None
 
 
 class EnemyBullet:
@@ -440,11 +450,13 @@ def game_loop():
                     return False
                 elif event.key == pygame.K_SPACE:
                     active_bullets.append(player_blue.fire('images/SpaceShooterRedux/PNG/Lasers/laserBlue01.png'))
-                    for enemy in active_enemies:
-                        active_enemy_bullets.append(enemy.fire('images/SpaceShooterRedux/PNG/Lasers/laserBlue01.png'))
         if len(active_enemies) < 3:
             active_enemies.append(Enemy('images/SpaceShooterRedux/PNG/Enemies/enemyBlack1.png'))
 
+        for enemy in active_enemies:
+            enemy_bullet = enemy.fire('images/SpaceShooterRedux/PNG/Lasers/laserBlue01.png')
+            if enemy_bullet is not None:
+                active_enemy_bullets.append(enemy_bullet)
         draw_game()
 
 
