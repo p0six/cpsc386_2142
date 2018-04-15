@@ -28,6 +28,7 @@
 
 import random
 import pygame
+import sys
 import math
 from pygame.locals import *
 
@@ -60,7 +61,7 @@ pygame.init()
 
 pygame.display.set_caption(GAME_TITLE)  # title of the window...
 screen = pygame.display.set_mode([DISPLAY_WIDTH, DISPLAY_HEIGHT])
-clock = pygame.time.Clock()
+# clock = pygame.time.Clock()
 random.seed()
 
 # Performance change: manipulate images here so they only need to be loaded once.
@@ -77,6 +78,14 @@ gamespace_two_blit = pygame.transform.scale(gamespace_img_two, (512, 768))
 gamespace_img_blits = [gamespace_one_blit, gamespace_two_blit]
 pygame.mixer.music.load('sounds/oakenfold.ogg')
 pygame.mixer.music.set_volume(0.232)
+menu_font = pygame.font.Font('fonts/Off The Haze.otf', 70)
+start_game_text= menu_font.render('Start Game', True, WHITE)
+start_game_text_rect = start_game_text.get_rect()  # get rect, byoch!
+start_game_text_rect.center = ((DISPLAY_WIDTH / 2), 300)
+start_game_button = (start_game_text_rect.left - 10, start_game_text_rect.top - 10,
+                     (start_game_text_rect.right + 10) - (start_game_text_rect.left - 10),
+                     (start_game_text_rect.bottom + 10) - (start_game_text_rect.top - 10))
+menu_buttons.append(start_game_button)
 
 
 def evaluate_menu_click(event):  # rectangle's: (top left x, top left y, width, height)
@@ -97,7 +106,7 @@ def game_menu():
     global display_help
     intro = True
     while intro:
-        # clock.tick(10)  # limits while loop to 10 iterations/second
+        # clock.tick(30)  # limits while loop to 30 iterations/second
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return False
@@ -106,7 +115,7 @@ def game_menu():
                     display_help = False
                 elif event.key == K_ESCAPE:
                     return False
-                elif event.key == K_RETURN:
+                elif event.key == K_RETURN: # should reset all game values here...
                     opponent_turn = False
                     boxes.clear()
                     player_score = [0, 0]
@@ -118,7 +127,8 @@ def game_menu():
                 if button_clicked is not None:
                     index = menu_buttons.index(button_clicked)
                     if index == 0:
-                        computer_opponent = False
+                        # computer_opponent = False
+                        return True
                     elif index == 1:
                         computer_opponent = True
                     elif index == 2:
@@ -131,22 +141,13 @@ def game_menu():
         # Draw help if requested..
         if display_help is True:
             screen.blit(rules_blit, (0, 0))
+        else: # Load background image..
+            screen.blit(menu_bg_blit, (0, 0))
 
-        # Load background image..
-        screen.blit(menu_bg_blit, (0, 0))
-
-        # Adding buttons....
-        menu_font = pygame.font.Font('fonts/Off The Haze.otf', 70)
-        start_game_text= menu_font.render('Start Game', True, WHITE)
-        start_game_rect = start_game_text.get_rect()  # get rect, byoch!
-        start_game_rect.center = ((DISPLAY_WIDTH / 2), 300)
-        start_game_button = (start_game_rect.left - 10, start_game_rect.top, (start_game_rect.right + 20) - start_game_rect.left, 30)
         pygame.draw.rect(screen, BLACK, start_game_button)
-        screen.blit(start_game_text, start_game_rect)
+        screen.blit(start_game_text, start_game_text_rect)
 
         # Deal with our menu buttons...
-        menu_buttons.clear()
-        menu_buttons.append(start_game_button)
 
         # This must run after all draw commands
         pygame.display.flip()
@@ -160,11 +161,13 @@ def process_play():
 def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
     global img_scroller_one
     global bg_bool
-    screen.blit(game_bg_blit, (0, 0))
 
     # Need to make this render based on vertical position in img_scroller vars
     screen.blit(gamespace_img_blits[not bg_bool], (256, img_scroller_one))
     screen.blit(gamespace_img_blits[bg_bool], (256, img_scroller_one - DISPLAY_HEIGHT))
+
+    # This must run after all draw commands
+    pygame.display.flip()
 
     if img_scroller_one >= DISPLAY_HEIGHT:
         img_scroller_one = 0
@@ -172,16 +175,24 @@ def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
     else:
         img_scroller_one += 4
 
-    # This must run after all draw commands
-    pygame.display.flip()
 
 
 def game_loop():
     pygame.mixer.music.play(-1, 154.055)
+    screen.blit(game_bg_blit, (0, 0))
 
     continue_loop = True  # potentially change until while lines_remaining != nil
     while continue_loop:
-        # clock.tick(10)  # limits while loop to 10 iterations/second
+        # clock.tick(30)  # limits while loop to 30 frames/second
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_UP] or keys[pygame.K_w]:
+           print('up is held')
+        elif keys[pygame.K_DOWN] or keys[pygame.K_s]:
+            print('down is held')
+        elif keys[pygame.K_LEFT] or keys[pygame.K_a]:
+            print('left is held')
+        elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+            print('right is held')
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
