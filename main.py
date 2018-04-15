@@ -6,26 +6,15 @@
 # California State University, Fullerton
 # March 23, 2018
 # ######################################################################################################################
-# DONE: 60% for playable game
-# DONE: 10% for a clearly defined win and lose state
-# DONE: 10% for a legal and random Brain opponent
-# DONE: 10% for online instructions or tutoring
-# DONE: 5% for a reasonable README.txt file
-# DONE: 5% for following the Submission rules
-# ######################################################################################################################
-# TODO: Add some keys to allow player to create new game / restart game
-# TODO: Play a sound when game is over?
-# TODO: Maybe give players the option of choosing a color
-# TODO: Boxes to represent punches / kicks to opponents bunny avatar, SF2 with an energy bar based on lines_remaining
+# TODO: Finish classes for each game asset type, including functions that determine next position of each
+# TODO: Finish logic which manipulates each of the classes when creating a game... determining when to add to game board
 # ######################################################################################################################
 # Description:
-# The dots and boxes game, as described here: https://en.wikipedia.org/wiki/Dots_and_Boxes
+# asdlkjasdlfajdl
 #
 # Add a bunny:
-# For each box, there is 1/8 chance the box will include a bunny, awarding 4 points for each box with a bunny.
+# alsdkfjasldkfjasdlfk
 # ######################################################################################################################
-
-
 import random
 import pygame
 import sys
@@ -48,17 +37,14 @@ WHITE = (255, 255, 255)
 display_help = False
 continue_game = True
 img_scroller_one = 0
-img_scroller_two = 768
 bg_bool = True
 ########################################################################################################################
 # Initialization values..
 ########################################################################################################################
-boxes = []
 menu_buttons = []
 ########################################################################################################################
 
 pygame.init()
-
 pygame.display.set_caption(GAME_TITLE)  # title of the window...
 screen = pygame.display.set_mode([DISPLAY_WIDTH, DISPLAY_HEIGHT])
 clock = pygame.time.Clock()
@@ -78,6 +64,8 @@ gamespace_two_blit = pygame.transform.scale(gamespace_img_two, (512, 768))
 gamespace_img_blits = [gamespace_one_blit, gamespace_two_blit]
 pygame.mixer.music.load('sounds/oakenfold.ogg')
 pygame.mixer.music.set_volume(0.232)
+
+# I hate PyGame buttons...
 menu_font = pygame.font.Font('fonts/Off The Haze.otf', 70)
 start_game_text= menu_font.render('Start Game', True, WHITE)
 start_game_text_rect = start_game_text.get_rect()  # get rect, byoch!
@@ -111,13 +99,12 @@ def game_menu():
             if event.type == pygame.QUIT:
                 return False
             elif event.type == KEYDOWN:
-                if event.key == K_ESCAPE and display_help is True:
-                    display_help = False
-                elif event.key == K_ESCAPE:
-                    return False
+                if event.key == K_ESCAPE:
+                    if display_help is True:
+                        display_help = False
+                    else:
+                        return False
                 elif event.key == K_RETURN: # should reset all game values here...
-                    opponent_turn = False
-                    boxes.clear()
                     player_score = [0, 0]
                     return True
                 elif event.key == K_h:
@@ -126,28 +113,18 @@ def game_menu():
                 button_clicked = evaluate_menu_click(event)
                 if button_clicked is not None:
                     index = menu_buttons.index(button_clicked)
-                    if index == 0:
-                        # computer_opponent = False
+                    if index == 0:  # first button starts game, exits menu..
+                        player_score = [0, 0]
                         return True
-                    elif index == 1:
-                        computer_opponent = True
-                    elif index == 2:
-                        COLS = ROWS = 5
-                    elif index == 3:
-                        COLS = ROWS = 7
-                    else:
-                        COLS = ROWS = 9
 
         # Draw help if requested..
         if display_help is True:
             screen.blit(rules_blit, (0, 0))
-        else: # Load background image..
+        else:  # Load background image..
             screen.blit(menu_bg_blit, (0, 0))
 
         pygame.draw.rect(screen, BLACK, start_game_button)
         screen.blit(start_game_text, start_game_text_rect)
-
-        # Deal with our menu buttons...
 
         # This must run after all draw commands
         pygame.display.flip()
@@ -174,7 +151,6 @@ def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
         bg_bool = not bg_bool
     else:
         img_scroller_one += 4
-
 
 
 def game_loop():
