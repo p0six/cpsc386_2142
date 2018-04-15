@@ -122,7 +122,7 @@ class Enemy:
         return self.x, self.y
 
     def fire(self, image):
-        if self.weapon_charge == 20:
+        if self.weapon_charge == 25:
             my_bullet = EnemyBullet(image, (self.x + self.rect.width / 2, self.y + self.rect.height / 2),
                                 (self.velocity_x, self.velocity_y), self.x_increasing)
             self.active_bullets.append(my_bullet)
@@ -154,7 +154,7 @@ class EnemyBullet:
         if self.y - self.speed + self.rect.height < 0:
             if self in active_enemy_bullets:
                 active_enemy_bullets.remove(self)
-            return -200, -200
+            return -400, -400
         self.set_location(self.x, self.y + self.speed)
         return self.x, self.y + self.speed
 
@@ -163,12 +163,12 @@ class EnemyBullet:
                 or (self.velocity_x > 0 and self.x + self.velocity_x >= 512):
             if self in active_enemy_bullets:
                 active_enemy_bullets.remove(self)
-            return -200, -200
+            return -400, -400
         elif (self.velocity_y < 0 and self.y + self.velocity_y <= 0) \
                 or (self.velocity_y > 0 and self.y + self.velocity_y >= 768):
             if self in active_enemy_bullets:
                 active_enemy_bullets.remove(self)
-            return -200, -200
+            return -400, -400
         self.set_location((self.x + self.velocity_x + self.speed * (1 if self.x_increasing else -1)),
                           self.y + self.velocity_y + self.speed)
         return self.location
@@ -195,7 +195,7 @@ class Bullet:
         if self.y - self.speed + self.rect.height < 0:
             if self in active_bullets:
                 active_bullets.remove(self)
-            return -200, -200
+            return -400, -400
         self.set_location(self.x, self.y - self.speed)
         return self.location
 
