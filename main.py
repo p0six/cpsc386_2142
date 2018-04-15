@@ -9,6 +9,8 @@
 # TODO: Spaceships need health, and we need to be able to adjust it as things get hit. also display health..
 # TODO: If health runs out... game should end.
 # TODO: Explosion animation with sprites!
+# TODO: Add PowerUps / Different Weapons with different vectors, additional bullets, and strength
+# TODO: add a bunny!
 # ######################################################################################################################
 # Sprites via Kenney @ https://opengameart.org/content/space-shooter-redux
 # ######################################################################################################################
@@ -220,24 +222,13 @@ gamespace_one_blit = pygame.transform.scale(gamespace_img_one, (512, 768)).conve
 gamespace_two_blit = pygame.transform.scale(gamespace_img_two, (512, 768)).convert()
 gamespace_img_blits = [gamespace_one_blit, gamespace_two_blit]
 
+points_font = pygame.font.Font('fonts/Off The Haze.otf', 35)
 player_blue = Player('images/SpaceShooterRedux/PNG/playerShip1_blue.png')
 ########################################################################################################################
 # Audio
 ########################################################################################################################
 pygame.mixer.music.load('sounds/oakenfold.ogg')
 pygame.mixer.music.set_volume(0.232)
-
-# I hate PyGame buttons...
-menu_font = pygame.font.Font('fonts/Off The Haze.otf', 70)
-start_game_text = menu_font.render('Start Game', True, WHITE)
-start_game_text_rect = start_game_text.get_rect()  # get rect, byoch!
-start_game_text_rect.center = ((DISPLAY_WIDTH / 2), 300)
-start_game_button = (start_game_text_rect.left - 10, start_game_text_rect.top - 10,
-                     (start_game_text_rect.right + 10) - (start_game_text_rect.left - 10),
-                     (start_game_text_rect.bottom + 10) - (start_game_text_rect.top - 10))
-menu_buttons.append(start_game_button)
-
-points_font = pygame.font.Font('fonts/Off The Haze.otf', 35)
 ########################################################################################################################
 
 
@@ -253,6 +244,14 @@ def game_menu():
     global player_score
     global display_help
     clock.tick(5)  # 5 FPS while in Game Menu..
+    menu_font = pygame.font.Font('fonts/Off The Haze.otf', 70)
+    start_game_text = menu_font.render('Start Game', True, WHITE)
+    start_game_text_rect = start_game_text.get_rect()  # get rect, byoch!
+    start_game_text_rect.center = ((DISPLAY_WIDTH / 2), 300)
+    start_game_button = (start_game_text_rect.left - 10, start_game_text_rect.top - 10,
+                         (start_game_text_rect.right + 10) - (start_game_text_rect.left - 10),
+                         (start_game_text_rect.bottom + 10) - (start_game_text_rect.top - 10))
+    menu_buttons.append(start_game_button)
     display_help = False
     intro = True
     while intro:
@@ -314,7 +313,7 @@ def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
     # Our player...
     scroller_bg.blit(player_blue.image, player_blue.location)
 
-    # ..who fires bullets.
+    # ..who fires bullets...
     for bullet in active_bullets:
         bullet.next_location()
         for active_enemy in active_enemies:
@@ -323,7 +322,6 @@ def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
                 # 2. play sound
                 explosion_enemy.play()
                 # 3. remove bullet
-                # active_bullets.remove(bullet)
                 if bullet in active_bullets:
                     active_bullets.remove(bullet)
                 # 4. remove enemy
@@ -333,7 +331,7 @@ def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
                 player_score += 1
         scroller_bg.blit(bullet.image, bullet.location)
 
-    # Has enemies...
+    # ...has enemies...
     for enemy in active_enemies:
         scroller_bg.blit(enemy.image, enemy.next_location())
         if enemy.rect.colliderect(player_blue.rect):
