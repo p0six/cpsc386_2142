@@ -43,6 +43,7 @@ active_enemies = []
 active_enemy_bullets = []
 active_asteroids = []
 player_score = 0
+enemy_score = 0
 img_scroller_one = 0
 bg_bool = True
 ########################################################################################################################
@@ -73,7 +74,7 @@ gamespace_one_blit = pygame.transform.scale(gamespace_img_one, (512, 768)).conve
 gamespace_two_blit = pygame.transform.scale(gamespace_img_two, (512, 768)).convert()
 gamespace_img_blits = [gamespace_one_blit, gamespace_two_blit]
 
-points_font = pygame.font.Font('fonts/Off The Haze.otf', 35)
+points_font = pygame.font.Font('fonts/Off The Haze.otf', 30)
 ########################################################################################################################
 # Audio
 ########################################################################################################################
@@ -86,7 +87,6 @@ class Enemy:
     def __init__(self, enemy_img):
         self.image = pygame.image.load(enemy_img).convert_alpha()
         self.rect = self.image.get_rect()
-        self.damage = 1
         self.health = 3
         self.min_speed = 1
         self.max_speed = 6
@@ -132,6 +132,7 @@ class EnemyBullet:
         self.velocity_x, self.velocity_y = vector
         self.x_increasing = x_increasing
         self.speed = 8
+        self.damage = 1
 
     def set_location(self, x, y):
         self.x = x
@@ -197,7 +198,7 @@ class Player:
         self.x, self.y = self.location
         self.rect.center = self.location
         self.speed = 8
-        self.hp = 100
+        self.hp = 20
 
     def fire(self, image):
         return Bullet(image, (self.x + (self.rect.width / 2) - 4, self.y - 3*self.rect.height/4))
@@ -235,13 +236,6 @@ class Player:
         self.set_location(self.x + self.speed, self.y + self.speed)
 
 
-########################################################################################################################
-# Instantiate a Player.....
-########################################################################################################################
-player_blue = Player('images/SpaceShooterRedux/PNG/playerShip1_blue.png')
-########################################################################################################################
-
-
 def evaluate_menu_click(event, menu_buttons):  # rectangle's: (top left x, top left y, width, height)
     x, y = event.pos
     for button in menu_buttons:
@@ -252,6 +246,7 @@ def evaluate_menu_click(event, menu_buttons):  # rectangle's: (top left x, top l
 
 def game_menu():
     global player_score
+    global enemy_score
     global display_help
     menu_buttons = []
     clock.tick(5)  # 5 FPS while in Game Menu..
@@ -276,7 +271,7 @@ def game_menu():
                     else:
                         return False
                 elif event.key == pygame.K_RETURN:  # should reset all game values here...
-                    player_score = 0
+                    new_game()
                     return True
                 elif event.key == pygame.K_h:
                     display_help = True
@@ -285,7 +280,7 @@ def game_menu():
                 if button_clicked is not None:
                     index = menu_buttons.index(button_clicked)
                     if index == 0:  # first button starts game, exits menu..
-                        player_score = 0
+                        new_game()
                         return True
 
         screen.blit(menu_bg_blit, (0, 0))
@@ -301,25 +296,45 @@ def game_menu():
     return True
 
 
+def new_game():
+    global player_score, enemy_score, player_blue
+    active_enemy_bullets.clear()
+    active_bullets.clear()
+    active_enemies.clear()
+    player_score = enemy_score = 0
+    player_blue = Player('images/SpaceShooterRedux/PNG/playerShip1_blue.png')
+
+
 def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
     global img_scroller_one
     global bg_bool
     global player_score
+    global enemy_score
 
     screen.blit(game_bg_blit, (0, 0))
 
     # Points display..
     points_text = points_font.render(str(player_score), True, WHITE)
     points_text_rect = points_text.get_rect()  # get rect, byoch!
-    points_text_rect.left = 28
-    points_text_rect.top = 60
+    points_text_rect.left = 22
+    points_text_rect.top = 45
     screen.blit(points_text, points_text_rect)
+
+    enemy_points_text = points_font.render(str(enemy_score), True, WHITE)
+    enemy_points_text_rect = enemy_points_text.get_rect()  # get rect, byoch!
+    enemy_points_text_rect.right = 990
+    enemy_points_text_rect.top = 45
+    screen.blit(enemy_points_text, enemy_points_text_rect)
 
     # This is our neverending scrolling background....
     scroller_bg = pygame.Surface((512, 768))
 
     scroller_bg.blit(gamespace_img_blits[not bg_bool], (0, img_scroller_one))
     scroller_bg.blit(gamespace_img_blits[bg_bool], (0, img_scroller_one - DISPLAY_HEIGHT))
+
+    # Display a health bar...
+    if player_blue.hp > 0:
+        pygame.draw.rect(screen, RED, (22, 700, player_blue.hp * 10, 40))
 
     # Our player...
     scroller_bg.blit(player_blue.image, player_blue.location)
@@ -343,12 +358,15 @@ def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
         scroller_bg.blit(enemy.image, enemy.next_location())
         if enemy.rect.colliderect(player_blue.rect):
             explosion_player.play()
+            player_blue.hp = 0
 
         # ...that also fire bullets...
         for enemy_bullet in enemy.active_bullets:
             enemy_bullet.next_location()
             if enemy_bullet.rect.colliderect(player_blue.rect):
                 explosion_player.play()
+                enemy_score += 1
+                player_blue.hp -= (enemy_bullet.damage if player_blue.hp >= 1 else 0)
                 if enemy_bullet in enemy.active_bullets:
                     enemy.active_bullets.remove(enemy_bullet)
             scroller_bg.blit(enemy_bullet.image, enemy_bullet.location)
@@ -358,6 +376,8 @@ def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
         enemy_bullet.next_location()
         if enemy_bullet.rect.colliderect(player_blue.rect):
             explosion_player.play()
+            enemy_score += 1
+            player_blue.hp -= (enemy_bullet.damage if player_blue.hp >= 1 else 0)
             if enemy_bullet in active_enemy_bullets:
                 active_enemy_bullets.remove(enemy_bullet)
         scroller_bg.blit(enemy_bullet.image, enemy_bullet.location)
@@ -382,6 +402,9 @@ def game_loop():
 
     continue_loop = True  # potentially change until while lines_remaining != nil
     while continue_loop:
+        if player_blue.hp == 0:
+            pygame.mixer.music.stop()
+            continue_loop = False
         keys = pygame.key.get_pressed()
         if keys[pygame.K_UP] or keys[pygame.K_w]:
             if keys[pygame.K_LEFT] or keys[pygame.K_a]:
