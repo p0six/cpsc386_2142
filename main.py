@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 # ######################################################################################################################
-# Author: Michael Romero / romerom@csu.fullerton.edu
+# Author: Michael Romero (romerom@csu.fullerton.edu), Diego Franchi (diegofranchi@csu.fullerton.edu)
 # CPSC-386 - Intro to Video Game Development
-# Project 2: Simple Classic Video Game in Pygame
+# Project 3: Simple new VG in Pygame
 # California State University, Fullerton
-# March 23, 2018
+# April 17, 2018
 # ######################################################################################################################
 # TODO: Finish classes for each game asset type, including functions that determine next position of each
 # TODO: Finish logic which manipulates each of the classes when creating a game... determining when to add to game board
 # ######################################################################################################################
 # Description:
-# asdlkjasdlfajdl
+# Pygame throwback to old 2d shooters like 1942, Raiden, etc.
 #
 # Add a bunny:
-# alsdkfjasldkfjasdlfk
+# Powerups are in the form of bunnies
 # ######################################################################################################################
 import random
 import pygame
@@ -35,6 +35,7 @@ LIGHT_GREY = (240, 250, 250)
 DARK_GREY = (90, 90, 50)
 WHITE = (255, 255, 255)
 display_help = False
+player_score = 0
 continue_game = True
 img_scroller_one = 0
 bg_bool = True
@@ -50,7 +51,9 @@ screen = pygame.display.set_mode([DISPLAY_WIDTH, DISPLAY_HEIGHT])
 clock = pygame.time.Clock()
 random.seed()
 
-# Performance change: manipulate images here so they only need to be loaded once.
+########################################################################################################################
+# Do some things once, and never again, in order to save CPU time.
+########################################################################################################################
 rules_img = pygame.image.load('images/rules.png').convert()
 rules_blit = pygame.transform.scale(rules_img, (800, 600))
 menu_bg_img = pygame.image.load('images/menuBackground.png').convert()
@@ -74,6 +77,7 @@ start_game_button = (start_game_text_rect.left - 10, start_game_text_rect.top - 
                      (start_game_text_rect.right + 10) - (start_game_text_rect.left - 10),
                      (start_game_text_rect.bottom + 10) - (start_game_text_rect.top - 10))
 menu_buttons.append(start_game_button)
+########################################################################################################################
 
 
 def evaluate_menu_click(event):  # rectangle's: (top left x, top left y, width, height)
@@ -85,15 +89,10 @@ def evaluate_menu_click(event):  # rectangle's: (top left x, top left y, width, 
 
 
 def game_menu():
-    global COLS
-    global ROWS
-    global computer_opponent
-    global opponent_turn
-    global boxes
     global player_score
     global display_help
+    clock.tick(5)  # 5 FPS while in Game Menu..
     intro = True
-    clock.tick(5)  # limits while loop to 30 iterations/second
     while intro:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -105,7 +104,7 @@ def game_menu():
                     else:
                         return False
                 elif event.key == K_RETURN: # should reset all game values here...
-                    player_score = [0, 0]
+                    player_score = 0
                     return True
                 elif event.key == K_h:
                     display_help = True
@@ -114,17 +113,16 @@ def game_menu():
                 if button_clicked is not None:
                     index = menu_buttons.index(button_clicked)
                     if index == 0:  # first button starts game, exits menu..
-                        player_score = [0, 0]
+                        player_score = 0
                         return True
+
+        screen.blit(menu_bg_blit, (0, 0))
+        pygame.draw.rect(screen, BLACK, start_game_button)
+        screen.blit(start_game_text, start_game_text_rect)
 
         # Draw help if requested..
         if display_help is True:
             screen.blit(rules_blit, (0, 0))
-        else:  # Load background image..
-            screen.blit(menu_bg_blit, (0, 0))
-
-        pygame.draw.rect(screen, BLACK, start_game_button)
-        screen.blit(start_game_text, start_game_text_rect)
 
         # This must run after all draw commands
         pygame.display.flip()
@@ -154,11 +152,11 @@ def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
 
 
 def game_loop():
-    pygame.mixer.music.play(-1, 154.055)
+    pygame.mixer.music.play(-1, 105.2)
     screen.blit(game_bg_blit, (0, 0))
+    clock.tick(30)  # 30 FPS Max
 
     continue_loop = True  # potentially change until while lines_remaining != nil
-    clock.tick(30)  # limits while loop to 30 frames/second
     while continue_loop:
         keys = pygame.key.get_pressed()
         if keys[pygame.K_UP] or keys[pygame.K_w]:
