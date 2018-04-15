@@ -142,8 +142,8 @@ class EnemyBullet:
 
     def next_location(self):
         if self.y - self.speed + self.rect.height < 0:
-            if self in active_bullets:
-                active_bullets.remove(self)
+            if self in active_enemy_bullets:
+                active_enemy_bullets.remove(self)
             return -200, -200
         self.set_location(self.x, self.y + self.speed)
         return self.x, self.y + self.speed
@@ -341,46 +341,51 @@ def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
 
     # ...who fires bullets...
     for bullet in active_bullets:
+        scroller_bg.blit(bullet.image, bullet.location)
+        bullet.next_location()
         for active_enemy in active_enemies:
             if bullet.rect.colliderect(active_enemy.rect):
                 explosion_enemy.play()
                 player_score += 1
-                if bullet in active_bullets:
+                if bullet in active_bullets and active_enemy in active_enemies:
+                    # print('player bullet collision')
                     active_bullets.remove(bullet)
-                if active_enemy in active_enemies:  # bullet actually collides many times... remove only once.
                     active_enemies.remove(active_enemy)
-            else:
-                scroller_bg.blit(bullet.image, bullet.location)
-        bullet.next_location()
+                    continue
+        if bullet not in active_bullets:
+            continue
 
     # ...has enemies...
     for enemy in active_enemies:
         scroller_bg.blit(enemy.image, enemy.next_location())
         if enemy.rect.colliderect(player_blue.rect):
+            # print('enemy collision')
             explosion_player.play()
             player_blue.hp = 0
 
         # ...that also fire bullets...
         for enemy_bullet in enemy.active_bullets:
-            enemy_bullet.next_location()
             if enemy_bullet.rect.colliderect(player_blue.rect):
+                # print('enemy bullet collision')
                 explosion_player.play()
                 enemy_score += 1
                 player_blue.hp -= (enemy_bullet.damage if player_blue.hp >= 1 else 0)
                 if enemy_bullet in enemy.active_bullets:
                     enemy.active_bullets.remove(enemy_bullet)
             scroller_bg.blit(enemy_bullet.image, enemy_bullet.location)
+            enemy_bullet.next_location()
 
     # ...which do not disappear merely because the enemy has died.
     for enemy_bullet in active_enemy_bullets:
-        enemy_bullet.next_location()
         if enemy_bullet.rect.colliderect(player_blue.rect):
+            # print('unowned enemy bullet collision')
             explosion_player.play()
             enemy_score += 1
             player_blue.hp -= (enemy_bullet.damage if player_blue.hp >= 1 else 0)
             if enemy_bullet in active_enemy_bullets:
                 active_enemy_bullets.remove(enemy_bullet)
         scroller_bg.blit(enemy_bullet.image, enemy_bullet.location)
+        enemy_bullet.next_location()
 
     # Paint our scrolling background...
     screen.blit(scroller_bg, (256, 0))
