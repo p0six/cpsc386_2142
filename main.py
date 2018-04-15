@@ -61,7 +61,7 @@ pygame.init()
 
 pygame.display.set_caption(GAME_TITLE)  # title of the window...
 screen = pygame.display.set_mode([DISPLAY_WIDTH, DISPLAY_HEIGHT])
-# clock = pygame.time.Clock()
+clock = pygame.time.Clock()
 random.seed()
 
 # Performance change: manipulate images here so they only need to be loaded once.
@@ -105,8 +105,8 @@ def game_menu():
     global player_score
     global display_help
     intro = True
+    clock.tick(5)  # limits while loop to 30 iterations/second
     while intro:
-        # clock.tick(30)  # limits while loop to 30 iterations/second
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return False
@@ -182,8 +182,8 @@ def game_loop():
     screen.blit(game_bg_blit, (0, 0))
 
     continue_loop = True  # potentially change until while lines_remaining != nil
+    clock.tick(30)  # limits while loop to 30 frames/second
     while continue_loop:
-        # clock.tick(30)  # limits while loop to 30 frames/second
         keys = pygame.key.get_pressed()
         if keys[pygame.K_UP] or keys[pygame.K_w]:
             print('up is held')
@@ -209,32 +209,8 @@ def game_loop():
                 if event.key == K_ESCAPE:
                     pygame.mixer.music.fadeout(4)
                     pygame.mixer.music.stop()
-
                     return False
-                # elif event.key == K_RETURN: # and len(lines_remaining) == 0:
-                #     if continue_game is False:
-                #         return
-                    #opponent_turn = False
-                    #boxes.clear()
-                    #player_score = [0, 0]
-                    # lines_remaining = generate_lines()
-                    #lines_used = []
-                    computer_opponent = False
 
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                print('mouse down')
-                # if len(lines_remaining) == 0:
-                #     continue_button = evaluate_continue_click(event)
-                #     if continue_button is not None:
-                #         index = continue_buttons.index(continue_button)
-                #         if index == 0:
-                #             continue_game = False
-                #         else:
-                #             continue_game = True
-                # else:
-                #     evaluate_click(event, lines_remaining, lines_used)
-
-        # draw_game(lines_remaining, lines_used)
         draw_game()
 
 
