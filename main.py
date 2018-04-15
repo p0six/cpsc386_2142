@@ -9,6 +9,8 @@
 # TODO: Finish classes for each game asset type, including functions that determine next position of each
 # TODO: Finish logic which manipulates each of the classes when creating a game... determining when to add to game board
 # ######################################################################################################################
+# Sprites via Kenney @ https://opengameart.org/content/space-shooter-redux
+# ######################################################################################################################
 # Description:
 # Pygame throwback to old 2d shooters like 1942, Raiden, etc.
 #
@@ -34,15 +36,15 @@ BLACK = (0, 0, 0)
 LIGHT_GREY = (240, 250, 250)
 DARK_GREY = (90, 90, 50)
 WHITE = (255, 255, 255)
-display_help = False
-player_score = 0
-continue_game = True
-img_scroller_one = 0
-bg_bool = True
 ########################################################################################################################
 # Initialization values..
 ########################################################################################################################
 menu_buttons = []
+active_bullets = []
+active_enemies = []
+player_score = 0
+img_scroller_one = 0
+bg_bool = True
 ########################################################################################################################
 
 pygame.init()
@@ -51,20 +53,60 @@ screen = pygame.display.set_mode([DISPLAY_WIDTH, DISPLAY_HEIGHT])
 clock = pygame.time.Clock()
 random.seed()
 
+
+########################################################################################################################
+class Bullet:
+    def __init__(self, bullet_img, location):
+        self.image = pygame.image.load(bullet_img).convert()
+        self.rect = self.image.get_rect()
+        self.location = location
+        self.x, self.y = self.location
+        self.damage = 1
+        self.angle = 1
+        self.speed = 1
+
+    def set_location(self, x, y):
+        self.location = (self.x, self.y)
+        self.x = x
+        self.y = y
+
+
+class Player: #***[1]***
+    def __init__(self, ship_image):
+        self.image = pygame.image.load(ship_image).convert()
+        self.rect = self.image.get_rect()
+        self.location = ((DISPLAY_WIDTH / 2) - (self.rect.width / 2), (DISPLAY_HEIGHT - (self.rect.height * 1.5)))
+        self.x, self.y = self.location
+        self.rect.center = self.location
+        self.speed = 8
+        self.hp = 100
+
+    def set_location(self, x, y):
+        self.location = (self.x, self.y)
+        self.x = x
+        self.y = y
+
+
 ########################################################################################################################
 # Do some things once, and never again, in order to save CPU time.
 ########################################################################################################################
 rules_img = pygame.image.load('images/rules.png').convert()
-rules_blit = pygame.transform.scale(rules_img, (800, 600))
+rules_blit = pygame.transform.scale(rules_img, (800, 600)).convert()
 menu_bg_img = pygame.image.load('images/menuBackground.png').convert()
-menu_bg_blit = pygame.transform.scale(menu_bg_img, (1024, 768))
+menu_bg_blit = pygame.transform.scale(menu_bg_img, (1024, 768)).convert()
 game_bg_img = pygame.image.load('images/gameBackground.png').convert()
-game_bg_blit = pygame.transform.scale(game_bg_img, (1024, 768))
-gamespace_img_one = pygame.image.load('images/gamespace1_Test.png').convert()
-gamespace_one_blit = pygame.transform.scale(gamespace_img_one, (512, 768))
-gamespace_img_two = pygame.image.load('images/gamespace2_Test.png').convert()
-gamespace_two_blit = pygame.transform.scale(gamespace_img_two, (512, 768))
+game_bg_blit = pygame.transform.scale(game_bg_img, (1024, 768)).convert()
+# gamespace_img_one = pygame.image.load('images/gamespace1_Test.png').convert()
+gamespace_img_one = pygame.image.load('images/space_background.png').convert()
+gamespace_one_blit = pygame.transform.scale(gamespace_img_one, (512, 768)).convert()
+# gamespace_img_two = pygame.image.load('images/gamespace2_Test.png').convert()
+gamespace_img_two = pygame.image.load('images/space_background.png').convert()
+gamespace_two_blit = pygame.transform.scale(gamespace_img_two, (512, 768)).convert()
 gamespace_img_blits = [gamespace_one_blit, gamespace_two_blit]
+player_blue = Player('images/SpaceShooterRedux/PNG/playerShip1_blue.png')
+########################################################################################################################
+# Audio
+########################################################################################################################
 pygame.mixer.music.load('sounds/oakenfold.ogg')
 pygame.mixer.music.set_volume(0.232)
 
@@ -92,6 +134,7 @@ def game_menu():
     global player_score
     global display_help
     clock.tick(5)  # 5 FPS while in Game Menu..
+    display_help = False
     intro = True
     while intro:
         for event in pygame.event.get():
@@ -141,6 +184,10 @@ def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
     screen.blit(gamespace_img_blits[not bg_bool], (256, img_scroller_one))
     screen.blit(gamespace_img_blits[bg_bool], (256, img_scroller_one - DISPLAY_HEIGHT))
 
+    screen.blit(player_blue.image, player_blue.location)
+    # laserBlue01 = Bullet('images/SpaceShooterRedux/PNG/Lasers/laserBlue01.png', player_blue.rect.center)
+    # screen.blit(laserBlue01.image, laserBlue01.location)
+
     # This must run after all draw commands
     pygame.display.flip()
 
@@ -148,8 +195,7 @@ def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
         img_scroller_one = 0
         bg_bool = not bg_bool
     else:
-        img_scroller_one += 4
-
+        img_scroller_one += 2
 
 def game_loop():
     pygame.mixer.music.play(-1, 105.2)
@@ -163,18 +209,28 @@ def game_loop():
             print('up is held')
             if keys[pygame.K_LEFT] or keys[pygame.K_a]:
                 print('left is also held')
-            if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+                player_blue.set_location(player_blue.x - player_blue.speed, player_blue.y - player_blue.speed)
+            elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
                 print('right is also held')
+                player_blue.set_location(player_blue.x + player_blue.speed, player_blue.y - player_blue.speed)
+            else:
+                player_blue.set_location(player_blue.x, player_blue.y - player_blue.speed)
         elif keys[pygame.K_DOWN] or keys[pygame.K_s]:
             print('down is held')
             if keys[pygame.K_LEFT] or keys[pygame.K_a]:
                 print('left is also held')
-            if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+                player_blue.set_location(player_blue.x - player_blue.speed, player_blue.y + player_blue.speed)
+            elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
                 print('right is also held')
+                player_blue.set_location(player_blue.x + player_blue.speed, player_blue.y + player_blue.speed)
+            else:
+                player_blue.set_location(player_blue.x, player_blue.y + player_blue.speed)
         elif keys[pygame.K_LEFT] or keys[pygame.K_a]:
             print('left is held')
+            player_blue.set_location(player_blue.x - player_blue.speed, player_blue.y)
         elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
             print('right is held')
+            player_blue.set_location(player_blue.x + player_blue.speed, player_blue.y)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
