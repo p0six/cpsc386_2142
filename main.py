@@ -6,8 +6,8 @@
 # California State University, Fullerton
 # April 17, 2018
 # ######################################################################################################################
-# TODO: Finish classes for each game asset type, including functions that determine next position of each
-# TODO: Finish logic which manipulates each of the classes when creating a game... determining when to add to game board
+# TODO: COLLISION DETECTION!!!
+# TODO: MAKE ENEMIES SHOOT!!
 # ######################################################################################################################
 # Sprites via Kenney @ https://opengameart.org/content/space-shooter-redux
 # ######################################################################################################################
@@ -42,28 +42,64 @@ WHITE = (255, 255, 255)
 menu_buttons = []
 active_bullets = []
 active_enemies = []
+active_enemy_bullets = []
+active_asteroids = []
 player_score = 0
 img_scroller_one = 0
 bg_bool = True
 ########################################################################################################################
-
 pygame.init()
 pygame.display.set_caption(GAME_TITLE)  # title of the window...
 screen = pygame.display.set_mode([DISPLAY_WIDTH, DISPLAY_HEIGHT])
 clock = pygame.time.Clock()
 random.seed()
 
-
+bullet_sound = pygame.mixer.Sound('sounds/sfx_laser2.ogg')
+bullet_sound.play()
 ########################################################################################################################
+
+
+class Enemy:
+
+    def __init__(self, enemy_img):
+        self.image = pygame.image.load(enemy_img).convert_alpha()
+        self.rect = self.image.get_rect()
+        self.min_speed = 1
+        self.max_speed = 6
+        # randomly positive or negative x velocity with random magnitude
+        self.velocity_x = random.randint(self.min_speed, self.max_speed - 1) if random.getrandbits(1) \
+            else random.randint(self.min_speed, self.max_speed - 1) * -1
+        self.velocity_y = random.randint(self.min_speed + 1, self.max_speed) # always want this value a positive...
+        self.velocity = pygame.math.Vector2(self.velocity_x, self.velocity_y)
+        self.x, self.y = (random.randint(0, 512 - self.rect.width), 0 - self.rect.height)
+        self.damage = 1
+        self.health = 3
+
+    def set_location(self, x, y):
+        self.x = x
+        self.y = y
+
+    def next_location(self):
+        if (self.velocity_x < 0 and self.x + self.velocity_x <= 0 - self.rect.width) or (self.velocity_x > 0 and self.x + self.velocity_x >= 512):
+            active_enemies.remove(self)
+            return (-200, -200)
+        elif (self.velocity_y < 0 and self.y + self.velocity_y <= 0) or (self.velocity_y > 0 and self.y + self.velocity_y >= 768):
+            active_enemies.remove(self)
+            return (-200, -200)
+        self.set_location(self.x + self.velocity_x, self.y + self.velocity_y)
+        return self.x, self.y
+
+
 class Bullet:
     def __init__(self, bullet_img, location):
-        self.image = pygame.image.load(bullet_img).convert()
+        self.image = pygame.image.load(bullet_img).convert_alpha()
         self.rect = self.image.get_rect()
         self.location = location
         self.x, self.y = self.location
         self.damage = 1
         self.angle = 1
         self.speed = 24
+        bullet_sound.play()
 
     def set_location(self, x, y):
         self.location = (self.x, self.y)
@@ -78,12 +114,11 @@ class Bullet:
         return self.location
 
 
-
-class Player: #***[1]***
+class Player:
     def __init__(self, ship_image):
-        self.image = pygame.image.load(ship_image).convert()
+        self.image = pygame.image.load(ship_image).convert_alpha()
         self.rect = self.image.get_rect()
-        self.location = ((DISPLAY_WIDTH / 2) - (self.rect.width / 2), (DISPLAY_HEIGHT - (self.rect.height * 1.5)))
+        self.location = ((DISPLAY_WIDTH / 2) / 2 - (self.rect.width / 2), (DISPLAY_HEIGHT - (self.rect.height * 1.5)))
         self.x, self.y = self.location
         self.rect.center = self.location
         self.speed = 8
@@ -92,13 +127,12 @@ class Player: #***[1]***
     def fire(self, image):
         return Bullet(image,(self.x + self.rect.width / 2, self.y - self.rect.height / 2))
 
-
     def set_location(self, x, y):
-        if x < 256 or x > 768 - self.rect.width or y < 0 or y > DISPLAY_HEIGHT - self.rect.height:
+        if x < 0 or x > 512 - self.rect.width or y < 0 or y > DISPLAY_HEIGHT - self.rect.height:
             return
-        self.location = (self.x, self.y)
         self.x = x
         self.y = y
+        self.location = (self.x, self.y)
 
     def up(self):
         self.set_location(self.x, self.y - self.speed)
@@ -133,13 +167,15 @@ menu_bg_img = pygame.image.load('images/menuBackground.png').convert()
 menu_bg_blit = pygame.transform.scale(menu_bg_img, (1024, 768)).convert()
 game_bg_img = pygame.image.load('images/gameBackground.png').convert()
 game_bg_blit = pygame.transform.scale(game_bg_img, (1024, 768)).convert()
+
 # gamespace_img_one = pygame.image.load('images/gamespace1_Test.png').convert()
-gamespace_img_one = pygame.image.load('images/space_background.png').convert()
-gamespace_one_blit = pygame.transform.scale(gamespace_img_one, (512, 768)).convert()
 # gamespace_img_two = pygame.image.load('images/gamespace2_Test.png').convert()
+gamespace_img_one = pygame.image.load('images/space_background.png').convert()
 gamespace_img_two = pygame.image.load('images/space_background.png').convert()
+gamespace_one_blit = pygame.transform.scale(gamespace_img_one, (512, 768)).convert()
 gamespace_two_blit = pygame.transform.scale(gamespace_img_two, (512, 768)).convert()
 gamespace_img_blits = [gamespace_one_blit, gamespace_two_blit]
+
 player_blue = Player('images/SpaceShooterRedux/PNG/playerShip1_blue.png')
 ########################################################################################################################
 # Audio
@@ -209,25 +245,37 @@ def game_menu():
     return True
 
 
-def process_play():
-    print('process_play')
-
-
 def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
     global img_scroller_one
     global bg_bool
 
-    # Need to make this render based on vertical position in img_scroller vars
-    screen.blit(gamespace_img_blits[not bg_bool], (256, img_scroller_one))
-    screen.blit(gamespace_img_blits[bg_bool], (256, img_scroller_one - DISPLAY_HEIGHT))
+    # This is our neverending scrolling background....
+    scroller_bg = pygame.Surface((512, 768))
 
-    screen.blit(player_blue.image, player_blue.location)
 
+    #screen.blit(gamespace_img_blits[not bg_bool], (256, img_scroller_one))
+    #screen.blit(gamespace_img_blits[bg_bool], (256, img_scroller_one - DISPLAY_HEIGHT))
+    scroller_bg.blit(gamespace_img_blits[not bg_bool], (0, img_scroller_one))
+    scroller_bg.blit(gamespace_img_blits[bg_bool], (0, img_scroller_one - DISPLAY_HEIGHT))
+
+    # Our player...
+    # screen.blit(player_blue.image, player_blue.location)
+    scroller_bg.blit(player_blue.image, player_blue.location)
+
+    # ..who fires bullets.
     for bullet in active_bullets:
-        screen.blit(bullet.image, bullet.next_location())
+        # screen.blit(bullet.image, bullet.next_location())
+        scroller_bg.blit(bullet.image, bullet.next_location())
 
-    # laserBlue01 = Bullet('images/SpaceShooterRedux/PNG/Lasers/laserBlue01.png', player_blue.rect.center)
-    # screen.blit(laserBlue01.image, laserBlue01.location)
+    # Has enemies...
+    for enemy in active_enemies:
+        # screen.blit(enemy.image, enemy.next_location())
+        scroller_bg.blit(enemy.image, enemy.next_location())
+
+    screen.blit(scroller_bg, (256, 0))
+    # ...that fire bullets.
+    for enemy_bullet in active_enemy_bullets:
+        screen.blit(enemy_bullet.image, enemy_bullet.next_location())
 
     # This must run after all draw commands
     pygame.display.flip()
@@ -238,6 +286,7 @@ def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
         bg_bool = not bg_bool
     else:
         img_scroller_one += 2
+
 
 def game_loop():
     pygame.mixer.music.play(-1, 105.2)
@@ -276,6 +325,8 @@ def game_loop():
                     return False
                 elif event.key == pygame.K_SPACE:
                     active_bullets.append(player_blue.fire('images/SpaceShooterRedux/PNG/Lasers/laserBlue01.png'))
+        if len(active_enemies) < 3:
+            active_enemies.append(Enemy('images/SpaceShooterRedux/PNG/Enemies/enemyBlack1.png'))
 
         draw_game()
 
