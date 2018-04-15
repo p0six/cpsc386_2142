@@ -63,6 +63,19 @@ screen = pygame.display.set_mode([DISPLAY_WIDTH, DISPLAY_HEIGHT])
 clock = pygame.time.Clock()
 random.seed()
 
+# Performance change: manipulate images here so they only need to be loaded once.
+rules_img = pygame.image.load('images/rules.png').convert()
+rules_blit = pygame.transform.scale(rules_img, (800, 600))
+menu_bg_img = pygame.image.load('images/menuBackground.png').convert()
+menu_bg_blit = pygame.transform.scale(menu_bg_img, (1024, 768))
+game_bg_img = pygame.image.load('images/gameBackground.png').convert()
+game_bg_blit = pygame.transform.scale(game_bg_img, (1024, 768))
+gamespace_img_one = pygame.image.load('images/gamespace1_Test.png').convert()
+gamespace_one_blit = pygame.transform.scale(gamespace_img_one, (512, 768))
+gamespace_img_two = pygame.image.load('images/gamespace2_Test.png').convert()
+gamespace_two_blit = pygame.transform.scale(gamespace_img_two, (512, 768))
+gamespace_img_blits = [gamespace_one_blit, gamespace_two_blit]
+
 
 def evaluate_menu_click(event):  # rectangle's: (top left x, top left y, width, height)
     x, y = event.pos
@@ -82,7 +95,7 @@ def game_menu():
     global display_help
     intro = True
     while intro:
-        clock.tick(10)  # limits while loop to 10 iterations/second
+        # clock.tick(10)  # limits while loop to 10 iterations/second
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return False
@@ -113,17 +126,12 @@ def game_menu():
                     else:
                         COLS = ROWS = 9
 
-
         # Draw help if requested..
         if display_help is True:
-            rules_img = pygame.image.load('images/rules.png').convert()
-            rules_blit = pygame.transform.scale(rules_img, (800, 600))
             screen.blit(rules_blit, (0, 0))
 
         # Load background image..
-        bg_img = pygame.image.load('images/menuBackground.png').convert()
-        bg_blit = pygame.transform.scale(bg_img, (1024, 768))
-        screen.blit(bg_blit, (0, 0))
+        screen.blit(menu_bg_blit, (0, 0))
 
         # Adding buttons....
         menu_font = pygame.font.Font('fonts/Off The Haze.otf', 70)
@@ -151,22 +159,13 @@ def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
     global img_scroller_one
     global img_scroller_two
     global bg_bool
-    bg_img = pygame.image.load('images/gameBackground.png').convert()
-    bg_blit = pygame.transform.scale(bg_img, (1024, 768))
-    screen.blit(bg_blit, (0, 0))
+    screen.blit(game_bg_blit, (0, 0))
 
     # Need to make this render based on vertical position in img_scroller vars
-    gamespace_img_one = pygame.image.load('images/gamespace1_Test.png').convert()
-    gamespace_img_two = pygame.image.load('images/gamespace2_Test.png').convert()
-    gamespace_imgs = [gamespace_img_one, gamespace_img_two]
+    screen.blit(gamespace_img_blits[not bg_bool], (256, img_scroller_one))
+    screen.blit(gamespace_img_blits[bg_bool], (256, img_scroller_one - DISPLAY_HEIGHT))
 
-    gamespace_one_blit = pygame.transform.scale(gamespace_imgs[not bg_bool], (512, 768))
-    screen.blit(gamespace_one_blit, (256, img_scroller_one))
-
-    gamespace_two_blit = pygame.transform.scale(gamespace_imgs[bg_bool], (512, 768))
-    screen.blit(gamespace_two_blit, (256, img_scroller_one - 768))
-
-    if img_scroller_one >= 768:
+    if img_scroller_one >= DISPLAY_HEIGHT:
         img_scroller_one = 0
         bg_bool = not bg_bool
     else:
@@ -178,13 +177,12 @@ def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
 
 def game_loop():
     pygame.mixer.music.load('sounds/oakenfold.ogg')
-    pygame.mixer.music.play(-1, 154.052)
+    pygame.mixer.music.play(-1, 154.055)
     pygame.mixer.music.set_volume(0.232)
-
 
     continue_loop = True  # potentially change until while lines_remaining != nil
     while continue_loop:
-        clock.tick(500)  # limits while loop to 10 iterations/second
+        # clock.tick(10)  # limits while loop to 10 iterations/second
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -195,14 +193,14 @@ def game_loop():
                     pygame.mixer.music.stop()
 
                     return False
-                elif event.key == K_RETURN: # and len(lines_remaining) == 0:
-                    if continue_game is False:
-                        return
-                    opponent_turn = False
-                    boxes.clear()
-                    player_score = [0, 0]
+                # elif event.key == K_RETURN: # and len(lines_remaining) == 0:
+                #     if continue_game is False:
+                #         return
+                    #opponent_turn = False
+                    #boxes.clear()
+                    #player_score = [0, 0]
                     # lines_remaining = generate_lines()
-                    lines_used = []
+                    #lines_used = []
                     computer_opponent = False
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
