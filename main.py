@@ -22,8 +22,6 @@
 # ######################################################################################################################
 import random
 import pygame
-# from pygame.locals import *
-
 ########################################################################################################################
 # Some "constants"
 ########################################################################################################################
@@ -40,7 +38,6 @@ WHITE = (255, 255, 255)
 ########################################################################################################################
 # Initialization values..
 ########################################################################################################################
-menu_buttons = []
 active_bullets = []
 active_enemies = []
 active_enemy_bullets = []
@@ -59,6 +56,29 @@ bullet_sound = pygame.mixer.Sound('sounds/sfx_laser2.ogg')
 explosion_enemy = pygame.mixer.Sound('sounds/explosion_enemy.wav')
 explosion_player = pygame.mixer.Sound('sounds/explosion_player.wav')
 bullet_sound.play()
+########################################################################################################################
+# Do some things once, and never again, in order to save CPU time.
+########################################################################################################################
+rules_img = pygame.image.load('images/rules.png').convert()
+rules_blit = pygame.transform.scale(rules_img, (800, 600)).convert()
+menu_bg_img = pygame.image.load('images/menuBackground.png').convert()
+menu_bg_blit = pygame.transform.scale(menu_bg_img, (1024, 768)).convert()
+game_bg_img = pygame.image.load('images/gameBackground.png').convert()
+game_bg_blit = pygame.transform.scale(game_bg_img, (1024, 768)).convert()
+
+# Can use two different background images and they'll infinitely follow eachother... for now, use same image
+gamespace_img_one = pygame.image.load('images/space_background.png').convert()
+gamespace_img_two = pygame.image.load('images/space_background.png').convert()
+gamespace_one_blit = pygame.transform.scale(gamespace_img_one, (512, 768)).convert()
+gamespace_two_blit = pygame.transform.scale(gamespace_img_two, (512, 768)).convert()
+gamespace_img_blits = [gamespace_one_blit, gamespace_two_blit]
+
+points_font = pygame.font.Font('fonts/Off The Haze.otf', 35)
+########################################################################################################################
+# Audio
+########################################################################################################################
+pygame.mixer.music.load('sounds/oakenfold.ogg')
+pygame.mixer.music.set_volume(0.232)
 ########################################################################################################################
 
 
@@ -180,7 +200,7 @@ class Player:
         self.hp = 100
 
     def fire(self, image):
-        return Bullet(image, (self.x + self.rect.width / 2, self.y - self.rect.height / 2))
+        return Bullet(image, (self.x + (self.rect.width / 2) - 4, self.y - 3*self.rect.height/4))
 
     def set_location(self, x, y):
         if x < 0 or x > 512 - self.rect.width or y < 0 or y > DISPLAY_HEIGHT - self.rect.height:
@@ -216,33 +236,13 @@ class Player:
 
 
 ########################################################################################################################
-# Do some things once, and never again, in order to save CPU time.
+# Instantiate a Player.....
 ########################################################################################################################
-rules_img = pygame.image.load('images/rules.png').convert()
-rules_blit = pygame.transform.scale(rules_img, (800, 600)).convert()
-menu_bg_img = pygame.image.load('images/menuBackground.png').convert()
-menu_bg_blit = pygame.transform.scale(menu_bg_img, (1024, 768)).convert()
-game_bg_img = pygame.image.load('images/gameBackground.png').convert()
-game_bg_blit = pygame.transform.scale(game_bg_img, (1024, 768)).convert()
-
-# Can use two different background images and they'll infinitely follow eachother... for now, use same image
-gamespace_img_one = pygame.image.load('images/space_background.png').convert()
-gamespace_img_two = pygame.image.load('images/space_background.png').convert()
-gamespace_one_blit = pygame.transform.scale(gamespace_img_one, (512, 768)).convert()
-gamespace_two_blit = pygame.transform.scale(gamespace_img_two, (512, 768)).convert()
-gamespace_img_blits = [gamespace_one_blit, gamespace_two_blit]
-
-points_font = pygame.font.Font('fonts/Off The Haze.otf', 35)
 player_blue = Player('images/SpaceShooterRedux/PNG/playerShip1_blue.png')
 ########################################################################################################################
-# Audio
-########################################################################################################################
-pygame.mixer.music.load('sounds/oakenfold.ogg')
-pygame.mixer.music.set_volume(0.232)
-########################################################################################################################
 
 
-def evaluate_menu_click(event):  # rectangle's: (top left x, top left y, width, height)
+def evaluate_menu_click(event, menu_buttons):  # rectangle's: (top left x, top left y, width, height)
     x, y = event.pos
     for button in menu_buttons:
         if button[0] <= x <= button[0] + button[2] and button[1] <= y <= button[1] + button[3]:
@@ -253,6 +253,7 @@ def evaluate_menu_click(event):  # rectangle's: (top left x, top left y, width, 
 def game_menu():
     global player_score
     global display_help
+    menu_buttons = []
     clock.tick(5)  # 5 FPS while in Game Menu..
     menu_font = pygame.font.Font('fonts/Off The Haze.otf', 70)
     start_game_text = menu_font.render('Start Game', True, WHITE)
@@ -280,7 +281,7 @@ def game_menu():
                 elif event.key == pygame.K_h:
                     display_help = True
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                button_clicked = evaluate_menu_click(event)
+                button_clicked = evaluate_menu_click(event, menu_buttons)
                 if button_clicked is not None:
                     index = menu_buttons.index(button_clicked)
                     if index == 0:  # first button starts game, exits menu..
@@ -326,12 +327,13 @@ def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
     # ...who fires bullets...
     for bullet in active_bullets:
         for active_enemy in active_enemies:
-            if bullet.rect.colliderect(active_enemy.rect) and bullet in active_bullets:
+            if bullet.rect.colliderect(active_enemy.rect):
                 explosion_enemy.play()
-                active_bullets.remove(bullet)
+                player_score += 1
+                if bullet in active_bullets:
+                    active_bullets.remove(bullet)
                 if active_enemy in active_enemies:  # bullet actually collides many times... remove only once.
                     active_enemies.remove(active_enemy)
-                player_score += 1
             else:
                 scroller_bg.blit(bullet.image, bullet.location)
         bullet.next_location()
