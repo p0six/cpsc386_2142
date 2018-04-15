@@ -55,25 +55,28 @@ clock = pygame.time.Clock()
 random.seed()
 
 bullet_sound = pygame.mixer.Sound('sounds/sfx_laser2.ogg')
+explosion_enemy = pygame.mixer.Sound('sounds/explosion_enemy.wav')
+explosion_player = pygame.mixer.Sound('sounds/explosion_player.wav')
 bullet_sound.play()
 ########################################################################################################################
 
 
 class Enemy:
-
     def __init__(self, enemy_img):
         self.image = pygame.image.load(enemy_img).convert_alpha()
         self.rect = self.image.get_rect()
+        self.damage = 1
+        self.health = 3
         self.min_speed = 1
         self.max_speed = 6
+        self.x_increasing = True if random.getrandbits(1) else False
         # randomly positive or negative x velocity with random magnitude
-        self.velocity_x = random.randint(self.min_speed, self.max_speed - 1) if random.getrandbits(1) \
+        self.velocity_x = random.randint(self.min_speed, self.max_speed - 1) if self.x_increasing \
             else random.randint(self.min_speed, self.max_speed - 1) * -1
         self.velocity_y = random.randint(self.min_speed + 1, self.max_speed) # always want this value a positive...
         self.velocity = pygame.math.Vector2(self.velocity_x, self.velocity_y)
         self.x, self.y = (random.randint(0, 512 - self.rect.width), 0 - self.rect.height)
-        self.damage = 1
-        self.health = 3
+        self.active_bullets = []
 
     def set_location(self, x, y):
         self.x = x
@@ -86,8 +89,49 @@ class Enemy:
         elif (self.velocity_y < 0 and self.y + self.velocity_y <= 0) or (self.velocity_y > 0 and self.y + self.velocity_y >= 768):
             active_enemies.remove(self)
             return (-200, -200)
+        self.rect.center = (self.x + self.rect.width / 2, self.y - self.rect.height / 2)
         self.set_location(self.x + self.velocity_x, self.y + self.velocity_y)
         return self.x, self.y
+
+    def fire(self, image):
+        my_bullet = EnemyBullet(image,(self.x + self.rect.width / 2, self.y + self.rect.height / 2), (self.velocity_x, self.velocity_y), self.x_increasing)
+        self.active_bullets.append(my_bullet)
+        return my_bullet
+
+
+class EnemyBullet:
+    def __init__(self, bullet_img, location, vector, x_increasing):
+        self.image = pygame.image.load(bullet_img).convert_alpha()
+        self.rect = self.image.get_rect()
+        self.location = location
+        self.x, self.y = self.location
+        self.velocity_x, self.velocity_y = vector
+        self.x_increasing = x_increasing
+        # self.damage = 1
+        # self.angle = 1
+        self.speed = 8
+        # bullet_sound.play()
+
+    def set_location(self, x, y):
+        self.x = x
+        self.y = y
+        self.location = (self.x, self.y)
+        self.rect.center = (self.x + self.rect.width / 2, self.y - self.rect.height / 2)
+
+    def next_location(self):
+        if self.y - self.speed + self.rect.height < 0:
+            active_bullets.remove(self)
+            return (-200, -200)
+        self.set_location(self.x, self.y + self.speed)
+        # if (self.velocity_x < 0 and self.x + self.velocity_x <= 0 - self.rect.width) or (self.velocity_x > 0 and self.x + self.velocity_x >= 512):
+        #     active_enemy_bullets.remove(self)
+        #     return (-200, -200)
+        # elif (self.velocity_y < 0 and self.y + self.velocity_y <= 0) or (self.velocity_y > 0 and self.y + self.velocity_y >= 768):
+        #     active_enemy_bullets.remove(self)
+        #     return (-200, -200)
+        # self.set_location((self.x + self.velocity_x + self.speed * (1 if self.x_increasing else -1)),
+        #                   self.y + self.velocity_y + self.speed)
+        return(self.location)
 
 
 class Bullet:
@@ -105,6 +149,7 @@ class Bullet:
         self.location = (self.x, self.y)
         self.x = x
         self.y = y
+        self.rect.center = (self.x + self.rect.width / 2, self.y - self.rect.height / 2)
 
     def next_location(self):
         if self.y - self.speed + self.rect.height < 0:
@@ -133,6 +178,7 @@ class Player:
         self.x = x
         self.y = y
         self.location = (self.x, self.y)
+        self.rect.center = (self.x + self.rect.width / 2, self.y - self.rect.height / 2)
 
     def up(self):
         self.set_location(self.x, self.y - self.speed)
@@ -185,13 +231,15 @@ pygame.mixer.music.set_volume(0.232)
 
 # I hate PyGame buttons...
 menu_font = pygame.font.Font('fonts/Off The Haze.otf', 70)
-start_game_text= menu_font.render('Start Game', True, WHITE)
+start_game_text = menu_font.render('Start Game', True, WHITE)
 start_game_text_rect = start_game_text.get_rect()  # get rect, byoch!
 start_game_text_rect.center = ((DISPLAY_WIDTH / 2), 300)
 start_game_button = (start_game_text_rect.left - 10, start_game_text_rect.top - 10,
                      (start_game_text_rect.right + 10) - (start_game_text_rect.left - 10),
                      (start_game_text_rect.bottom + 10) - (start_game_text_rect.top - 10))
 menu_buttons.append(start_game_button)
+
+points_font = pygame.font.Font('fonts/Off The Haze.otf', 35)
 ########################################################################################################################
 
 
@@ -248,34 +296,68 @@ def game_menu():
 def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
     global img_scroller_one
     global bg_bool
+    global player_score
+
+    screen.blit(game_bg_blit, (0, 0))
+
+    # Points display..
+    points_text = points_font.render(str(player_score), True, WHITE)
+    points_text_rect = points_text.get_rect()  # get rect, byoch!
+    points_text_rect.left = 28
+    points_text_rect.top = 60
+    screen.blit(points_text, points_text_rect)
 
     # This is our neverending scrolling background....
     scroller_bg = pygame.Surface((512, 768))
 
-
-    #screen.blit(gamespace_img_blits[not bg_bool], (256, img_scroller_one))
-    #screen.blit(gamespace_img_blits[bg_bool], (256, img_scroller_one - DISPLAY_HEIGHT))
     scroller_bg.blit(gamespace_img_blits[not bg_bool], (0, img_scroller_one))
     scroller_bg.blit(gamespace_img_blits[bg_bool], (0, img_scroller_one - DISPLAY_HEIGHT))
 
     # Our player...
-    # screen.blit(player_blue.image, player_blue.location)
     scroller_bg.blit(player_blue.image, player_blue.location)
 
     # ..who fires bullets.
     for bullet in active_bullets:
-        # screen.blit(bullet.image, bullet.next_location())
-        scroller_bg.blit(bullet.image, bullet.next_location())
+        bullet.next_location()
+        for active_enemy in active_enemies:
+            if active_enemy.rect.collidepoint(bullet.x, bullet.y):
+                # 1. display explosion  - this one is a bit tricky..
+                # 2. play sound
+                explosion_enemy.play()
+                # 3. remove bullet
+                # active_bullets.remove(bullet)
+                if bullet in active_bullets:
+                    active_bullets.remove(bullet)
+                # 4. remove enemy
+                if active_enemy in active_enemies:
+                    active_enemies.remove(active_enemy)
+                # 5. increase player score
+                player_score += 1
+        scroller_bg.blit(bullet.image, bullet.location)
 
     # Has enemies...
     for enemy in active_enemies:
-        # screen.blit(enemy.image, enemy.next_location())
         scroller_bg.blit(enemy.image, enemy.next_location())
+        if enemy.rect.colliderect(player_blue.rect):
+            explosion_player.play()
+        # ...that also fire bullets.
+        for active_bullet in enemy.active_bullets:
+            active_bullet.next_location()
+            if player_blue.rect.colliderect(active_bullet.rect):
+                explosion_player.play()
+                enemy.active_bullets.remove(active_bullet)
+            else:
+                scroller_bg.blit(active_bullet.image, active_bullet.location)
+
+    for enemy_bullet in active_enemy_bullets:
+        enemy_bullet.next_location()
+        if player_blue.rect.colliderect(enemy_bullet.rect):
+            explosion_player.play()
+            active_enemy_bullets.remove(enemy_bullet)
+        else:
+            scroller_bg.blit(enemy_bullet.image, enemy_bullet.location)
 
     screen.blit(scroller_bg, (256, 0))
-    # ...that fire bullets.
-    for enemy_bullet in active_enemy_bullets:
-        screen.blit(enemy_bullet.image, enemy_bullet.next_location())
 
     # This must run after all draw commands
     pygame.display.flip()
@@ -285,12 +367,11 @@ def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
         img_scroller_one = 0
         bg_bool = not bg_bool
     else:
-        img_scroller_one += 2
+        img_scroller_one += 2  # controls how fast our background scrolls by..
 
 
 def game_loop():
-    pygame.mixer.music.play(-1, 105.2)
-    screen.blit(game_bg_blit, (0, 0))
+    # pygame.mixer.music.play(-1, 105.2)
     clock.tick(30)  # 30 FPS Max
 
     continue_loop = True  # potentially change until while lines_remaining != nil
@@ -325,6 +406,8 @@ def game_loop():
                     return False
                 elif event.key == pygame.K_SPACE:
                     active_bullets.append(player_blue.fire('images/SpaceShooterRedux/PNG/Lasers/laserBlue01.png'))
+                    for enemy in active_enemies:
+                        active_enemy_bullets.append(enemy.fire('images/SpaceShooterRedux/PNG/Lasers/laserBlue01.png'))
         if len(active_enemies) < 3:
             active_enemies.append(Enemy('images/SpaceShooterRedux/PNG/Enemies/enemyBlack1.png'))
 
