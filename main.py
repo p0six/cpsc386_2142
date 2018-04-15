@@ -186,9 +186,17 @@ def game_loop():
         # clock.tick(30)  # limits while loop to 30 frames/second
         keys = pygame.key.get_pressed()
         if keys[pygame.K_UP] or keys[pygame.K_w]:
-           print('up is held')
+            print('up is held')
+            if keys[pygame.K_LEFT] or keys[pygame.K_a]:
+                print('left is also held')
+            if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+                print('right is also held')
         elif keys[pygame.K_DOWN] or keys[pygame.K_s]:
             print('down is held')
+            if keys[pygame.K_LEFT] or keys[pygame.K_a]:
+                print('left is also held')
+            if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+                print('right is also held')
         elif keys[pygame.K_LEFT] or keys[pygame.K_a]:
             print('left is held')
         elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
