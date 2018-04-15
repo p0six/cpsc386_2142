@@ -6,11 +6,11 @@
 # California State University, Fullerton
 # April 17, 2018
 # ######################################################################################################################
-# TODO: Spaceships need health, and we need to be able to adjust it as things get hit. also display health..
-# TODO: If health runs out... game should end.
 # TODO: Explosion animation with sprites!
-# TODO: Add PowerUps / Different Weapons with different vectors, additional bullets, and strength
-# TODO: add a bunny!
+# TODO: Spaceships need health, and we need to be able to adjust it as things get hit. also display health..
+# TODO: If health runs out... game should end. Check if player score higher than enemy score to determine win condition.
+# TODO: Add PowerUps / Different Weapons with different trajectories, additional bullets, and strength
+# TODO: Add a bunny!
 # ######################################################################################################################
 # Sprites via Kenney @ https://opengameart.org/content/space-shooter-redux
 # ######################################################################################################################
@@ -29,7 +29,7 @@ GAME_TITLE = str(2148)
 DISPLAY_WIDTH = 1024
 DISPLAY_HEIGHT = 768
 RED = (255, 0, 0)
-GREEN = (0, 255, 0)  # unused thus far.. could potentially add 2 or more opponents
+GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
 BLACK = (0, 0, 0)
 LIGHT_GREY = (240, 250, 250)
