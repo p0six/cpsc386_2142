@@ -6,8 +6,9 @@
 # California State University, Fullerton
 # April 17, 2018
 # ######################################################################################################################
-# TODO: COLLISION DETECTION!!!
-# TODO: MAKE ENEMIES SHOOT!!
+# TODO: Spaceships need health, and we need to be able to adjust it as things get hit. also display health..
+# TODO: If health runs out... game should end.
+# TODO: Explosion animation with sprites!
 # ######################################################################################################################
 # Sprites via Kenney @ https://opengameart.org/content/space-shooter-redux
 # ######################################################################################################################
@@ -70,7 +71,6 @@ class Enemy:
         self.min_speed = 1
         self.max_speed = 6
         self.x_increasing = True if random.getrandbits(1) else False
-        # randomly positive or negative x velocity with random magnitude
         self.velocity_x = random.randint(self.min_speed, self.max_speed - 1) if self.x_increasing \
             else random.randint(self.min_speed, self.max_speed - 1) * -1
         self.velocity_y = random.randint(self.min_speed + 1, self.max_speed) # always want this value a positive...
@@ -107,10 +107,7 @@ class EnemyBullet:
         self.x, self.y = self.location
         self.velocity_x, self.velocity_y = vector
         self.x_increasing = x_increasing
-        # self.damage = 1
-        # self.angle = 1
         self.speed = 8
-        # bullet_sound.play()
 
     def set_location(self, x, y):
         self.x = x
@@ -123,14 +120,16 @@ class EnemyBullet:
             active_bullets.remove(self)
             return (-200, -200)
         self.set_location(self.x, self.y + self.speed)
-        # if (self.velocity_x < 0 and self.x + self.velocity_x <= 0 - self.rect.width) or (self.velocity_x > 0 and self.x + self.velocity_x >= 512):
-        #     active_enemy_bullets.remove(self)
-        #     return (-200, -200)
-        # elif (self.velocity_y < 0 and self.y + self.velocity_y <= 0) or (self.velocity_y > 0 and self.y + self.velocity_y >= 768):
-        #     active_enemy_bullets.remove(self)
-        #     return (-200, -200)
-        # self.set_location((self.x + self.velocity_x + self.speed * (1 if self.x_increasing else -1)),
-        #                   self.y + self.velocity_y + self.speed)
+
+    def next_vector_location(self):
+        if (self.velocity_x < 0 and self.x + self.velocity_x <= 0 - self.rect.width) or (self.velocity_x > 0 and self.x + self.velocity_x >= 512):
+            active_enemy_bullets.remove(self)
+            return (-200, -200)
+        elif (self.velocity_y < 0 and self.y + self.velocity_y <= 0) or (self.velocity_y > 0 and self.y + self.velocity_y >= 768):
+            active_enemy_bullets.remove(self)
+            return (-200, -200)
+        self.set_location((self.x + self.velocity_x + self.speed * (1 if self.x_increasing else -1)),
+                          self.y + self.velocity_y + self.speed)
         return(self.location)
 
 
@@ -214,8 +213,7 @@ menu_bg_blit = pygame.transform.scale(menu_bg_img, (1024, 768)).convert()
 game_bg_img = pygame.image.load('images/gameBackground.png').convert()
 game_bg_blit = pygame.transform.scale(game_bg_img, (1024, 768)).convert()
 
-# gamespace_img_one = pygame.image.load('images/gamespace1_Test.png').convert()
-# gamespace_img_two = pygame.image.load('images/gamespace2_Test.png').convert()
+# Can use two different background images and they'll infinitely follow eachother... for now, use same image
 gamespace_img_one = pygame.image.load('images/space_background.png').convert()
 gamespace_img_two = pygame.image.load('images/space_background.png').convert()
 gamespace_one_blit = pygame.transform.scale(gamespace_img_one, (512, 768)).convert()
@@ -371,7 +369,7 @@ def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
 
 
 def game_loop():
-    # pygame.mixer.music.play(-1, 105.2)
+    pygame.mixer.music.play(-1, 105.2)
     clock.tick(30)  # 30 FPS Max
 
     continue_loop = True  # potentially change until while lines_remaining != nil
