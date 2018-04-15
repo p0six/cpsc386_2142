@@ -19,11 +19,8 @@
 ############################################################################################
 
 import pygame
-#import time
-#from random import shuffle
 
 pygame.init()
-#pygame.mixer.init()
 
 width = 1024
 height = 768
@@ -31,16 +28,6 @@ height = 768
 black = (0,0,0)
 white = (255,255,255)
 
-screen = pygame.display.set_mode((width,height))
-pygame.display.set_caption('2142 v0.0.1')
-clock = pygame.time.Clock()
-
-# def text_objects(text, font):
-    # textSurface = font.render(text, True, black)
-    # return textSurface, textSurface.get_rect()
-
-    
-    
 class PowerUps: #***[1]***
     def __init__(self):
         self.length =
@@ -113,8 +100,8 @@ class Game: #***[1]***
         screen.fill(white)
         pygame.display.update()
         clock.tick(60)
-    
-    
+
+
 class Menu: #***[1]***
     def __init__(self):
         self.draw_menu()
@@ -122,11 +109,3 @@ class Menu: #***[1]***
         screen.fill(white)
         pygame.display.update()
         clock.tick(60)
-
-
-def main(): #***[1]***
-    Menu()
-
-
-if __name__ == "__main__": #***[1]***
-    main()

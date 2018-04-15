@@ -22,14 +22,12 @@
 # ######################################################################################################################
 import random
 import pygame
-import sys
-import math
-from pygame.locals import *
+# from pygame.locals import *
 
 ########################################################################################################################
 # Some "constants"
 ########################################################################################################################
-GAME_TITLE = '2148'
+GAME_TITLE = str(2148)
 DISPLAY_WIDTH = 1024
 DISPLAY_HEIGHT = 768
 RED = (255, 0, 0)
@@ -75,8 +73,7 @@ class Enemy:
         self.x_increasing = True if random.getrandbits(1) else False
         self.velocity_x = random.randint(self.min_speed, self.max_speed - 1) if self.x_increasing \
             else random.randint(self.min_speed, self.max_speed - 1) * -1
-        self.velocity_y = random.randint(self.min_speed + 1, self.max_speed) # always want this value a positive...
-        self.velocity = pygame.math.Vector2(self.velocity_x, self.velocity_y)
+        self.velocity_y = random.randint(self.min_speed + 1, self.max_speed)  # always want this value a positive...
         self.x, self.y = (random.randint(0, 512 - self.rect.width), 0 - self.rect.height)
         self.active_bullets = []
 
@@ -85,18 +82,23 @@ class Enemy:
         self.y = y
 
     def next_location(self):
-        if (self.velocity_x < 0 and self.x + self.velocity_x <= 0 - self.rect.width) or (self.velocity_x > 0 and self.x + self.velocity_x >= 512):
-            active_enemies.remove(self)
-            return (-200, -200)
-        elif (self.velocity_y < 0 and self.y + self.velocity_y <= 0) or (self.velocity_y > 0 and self.y + self.velocity_y >= 768):
-            active_enemies.remove(self)
-            return (-200, -200)
-        self.rect.center = (self.x + self.rect.width / 2, self.y - self.rect.height / 2)
+        if (self.velocity_x < 0 and self.x + self.velocity_x <= 0 - self.rect.width) \
+                or (self.velocity_x > 0 and self.x + self.velocity_x >= 512):
+            if self in active_enemies:
+                active_enemies.remove(self)
+            return -200, -200
+        elif (self.velocity_y < 0 and self.y + self.velocity_y <= 0) \
+                or (self.velocity_y > 0 and self.y + self.velocity_y >= 768):
+            if self in active_enemies:
+                active_enemies.remove(self)
+            return -200, -200
+        self.rect.center = (self.x + self.rect.width / 2, self.y - 3*self.rect.height/4)
         self.set_location(self.x + self.velocity_x, self.y + self.velocity_y)
         return self.x, self.y
 
     def fire(self, image):
-        my_bullet = EnemyBullet(image,(self.x + self.rect.width / 2, self.y + self.rect.height / 2), (self.velocity_x, self.velocity_y), self.x_increasing)
+        my_bullet = EnemyBullet(image, (self.x + self.rect.width / 2, self.y + self.rect.height / 2),
+                                (self.velocity_x, self.velocity_y), self.x_increasing)
         self.active_bullets.append(my_bullet)
         return my_bullet
 
@@ -115,24 +117,30 @@ class EnemyBullet:
         self.x = x
         self.y = y
         self.location = (self.x, self.y)
-        self.rect.center = (self.x + self.rect.width / 2, self.y - self.rect.height / 2)
+        self.rect.center = (self.x + self.rect.width / 2, self.y - 3*self.rect.height/4)
 
     def next_location(self):
         if self.y - self.speed + self.rect.height < 0:
-            active_bullets.remove(self)
-            return (-200, -200)
+            if self in active_bullets:
+                active_bullets.remove(self)
+            return -200, -200
         self.set_location(self.x, self.y + self.speed)
+        return self.x, self.y + self.speed
 
     def next_vector_location(self):
-        if (self.velocity_x < 0 and self.x + self.velocity_x <= 0 - self.rect.width) or (self.velocity_x > 0 and self.x + self.velocity_x >= 512):
-            active_enemy_bullets.remove(self)
-            return (-200, -200)
-        elif (self.velocity_y < 0 and self.y + self.velocity_y <= 0) or (self.velocity_y > 0 and self.y + self.velocity_y >= 768):
-            active_enemy_bullets.remove(self)
-            return (-200, -200)
+        if (self.velocity_x < 0 and self.x + self.velocity_x <= 0 - self.rect.width) \
+                or (self.velocity_x > 0 and self.x + self.velocity_x >= 512):
+            if self in active_enemy_bullets:
+                active_enemy_bullets.remove(self)
+            return -200, -200
+        elif (self.velocity_y < 0 and self.y + self.velocity_y <= 0) \
+                or (self.velocity_y > 0 and self.y + self.velocity_y >= 768):
+            if self in active_enemy_bullets:
+                active_enemy_bullets.remove(self)
+            return -200, -200
         self.set_location((self.x + self.velocity_x + self.speed * (1 if self.x_increasing else -1)),
                           self.y + self.velocity_y + self.speed)
-        return(self.location)
+        return self.location
 
 
 class Bullet:
@@ -150,12 +158,13 @@ class Bullet:
         self.location = (self.x, self.y)
         self.x = x
         self.y = y
-        self.rect.center = (self.x + self.rect.width / 2, self.y - self.rect.height / 2)
+        self.rect.center = (self.x + self.rect.width / 2, self.y - self.rect.height)
 
     def next_location(self):
         if self.y - self.speed + self.rect.height < 0:
-            active_bullets.remove(self)
-            return (-200, -200)
+            if self in active_bullets:
+                active_bullets.remove(self)
+            return -200, -200
         self.set_location(self.x, self.y - self.speed)
         return self.location
 
@@ -171,7 +180,7 @@ class Player:
         self.hp = 100
 
     def fire(self, image):
-        return Bullet(image,(self.x + self.rect.width / 2, self.y - self.rect.height / 2))
+        return Bullet(image, (self.x + self.rect.width / 2, self.y - self.rect.height / 2))
 
     def set_location(self, x, y):
         if x < 0 or x > 512 - self.rect.width or y < 0 or y > DISPLAY_HEIGHT - self.rect.height:
@@ -204,6 +213,7 @@ class Player:
 
     def down_right(self):
         self.set_location(self.x + self.speed, self.y + self.speed)
+
 
 ########################################################################################################################
 # Do some things once, and never again, in order to save CPU time.
@@ -264,7 +274,7 @@ def game_menu():
                         display_help = False
                     else:
                         return False
-                elif event.key == pygame.K_RETURN: # should reset all game values here...
+                elif event.key == pygame.K_RETURN:  # should reset all game values here...
                     player_score = 0
                     return True
                 elif event.key == pygame.K_h:
@@ -313,46 +323,44 @@ def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
     # Our player...
     scroller_bg.blit(player_blue.image, player_blue.location)
 
-    # ..who fires bullets...
+    # ...who fires bullets...
     for bullet in active_bullets:
-        bullet.next_location()
         for active_enemy in active_enemies:
-            if active_enemy.rect.collidepoint(bullet.x, bullet.y):
-                # 1. display explosion  - this one is a bit tricky..
-                # 2. play sound
+            if bullet.rect.colliderect(active_enemy.rect) and bullet in active_bullets:
                 explosion_enemy.play()
-                # 3. remove bullet
-                if bullet in active_bullets:
-                    active_bullets.remove(bullet)
-                # 4. remove enemy
-                if active_enemy in active_enemies:
+                active_bullets.remove(bullet)
+                if active_enemy in active_enemies:  # bullet actually collides many times... remove only once.
                     active_enemies.remove(active_enemy)
-                # 5. increase player score
                 player_score += 1
-        scroller_bg.blit(bullet.image, bullet.location)
+            else:
+                scroller_bg.blit(bullet.image, bullet.location)
+        bullet.next_location()
 
     # ...has enemies...
     for enemy in active_enemies:
         scroller_bg.blit(enemy.image, enemy.next_location())
         if enemy.rect.colliderect(player_blue.rect):
             explosion_player.play()
-        # ...that also fire bullets.
-        for active_bullet in enemy.active_bullets:
-            active_bullet.next_location()
-            if player_blue.rect.colliderect(active_bullet.rect):
-                explosion_player.play()
-                enemy.active_bullets.remove(active_bullet)
-            else:
-                scroller_bg.blit(active_bullet.image, active_bullet.location)
 
-    for enemy_bullet in active_enemy_bullets:
-        enemy_bullet.next_location()
-        if player_blue.rect.colliderect(enemy_bullet.rect):
-            explosion_player.play()
-            active_enemy_bullets.remove(enemy_bullet)
-        else:
+        # ...that also fire bullets...
+        for enemy_bullet in enemy.active_bullets:
+            enemy_bullet.next_location()
+            if enemy_bullet.rect.colliderect(player_blue.rect):
+                explosion_player.play()
+                if enemy_bullet in enemy.active_bullets:
+                    enemy.active_bullets.remove(enemy_bullet)
             scroller_bg.blit(enemy_bullet.image, enemy_bullet.location)
 
+    # ...which do not disappear merely because the enemy has died.
+    for enemy_bullet in active_enemy_bullets:
+        enemy_bullet.next_location()
+        if enemy_bullet.rect.colliderect(player_blue.rect):
+            explosion_player.play()
+            if enemy_bullet in active_enemy_bullets:
+                active_enemy_bullets.remove(enemy_bullet)
+        scroller_bg.blit(enemy_bullet.image, enemy_bullet.location)
+
+    # Paint our scrolling background...
     screen.blit(scroller_bg, (256, 0))
 
     # This must run after all draw commands
