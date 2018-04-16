@@ -81,11 +81,6 @@ gamespace_img_blits = [gamespace_one_blit, gamespace_two_blit]
 points_font = pygame.font.Font('fonts/Off The Haze.otf', 30)
 level_font = pygame.font.Font('fonts/Off The Haze.otf', 90)
 ########################################################################################################################
-# Audio
-########################################################################################################################
-pygame.mixer.music.load('sounds/oakenfold.ogg')
-pygame.mixer.music.set_volume(0.232)
-########################################################################################################################
 
 
 class Enemy:
@@ -256,9 +251,10 @@ def evaluate_menu_click(event, menu_buttons):  # rectangle's: (top left x, top l
 
 
 def game_menu():
-    global player_score
-    global enemy_score
-    global display_help
+    global player_score, enemy_score, display_help
+    pygame.mixer.music.load('sounds/menu_audio_01.ogg')
+    pygame.mixer.music.set_volume(0.232)
+    pygame.mixer.music.play(-1, 0)
     menu_buttons = []
     clock.tick(5)  # 5 FPS while in Game Menu..
     menu_font = pygame.font.Font('fonts/Off The Haze.otf', 70)
@@ -422,7 +418,12 @@ def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
 
 
 def game_loop():
+    pygame.mixer.music.stop()
+    pygame.mixer.music.load('sounds/oakenfold.ogg')
+    pygame.mixer.music.set_volume(0.232)
     pygame.mixer.music.play(-1, 105.2)
+    # pygame.mixer.music.load('sounds/game_audio.ogg')
+    # pygame.mixer.music.play(-1, 0)
     global level, score_changed
     score_changed = False
     level = 1
