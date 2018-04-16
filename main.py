@@ -79,6 +79,7 @@ gamespace_two_blit = pygame.transform.scale(gamespace_img_two, (512, 768)).conve
 gamespace_img_blits = [gamespace_one_blit, gamespace_two_blit]
 
 points_font = pygame.font.Font('fonts/Off The Haze.otf', 30)
+level_font = pygame.font.Font('fonts/Off The Haze.otf', 90)
 ########################################################################################################################
 # Audio
 ########################################################################################################################
@@ -122,7 +123,7 @@ class Enemy:
         return self.x, self.y
 
     def fire(self, image):
-        if self.weapon_charge == 25:
+        if self.weapon_charge >= 25:
             my_bullet = EnemyBullet(image, (self.x + self.rect.width / 2, self.y + self.rect.height / 2),
                                 (self.velocity_x, self.velocity_y), self.x_increasing)
             self.active_bullets.append(my_bullet)
@@ -307,19 +308,17 @@ def game_menu():
 
 
 def new_game():
-    global player_score, enemy_score, player_blue
+    global player_score, enemy_score, player_blue, level
     active_enemy_bullets.clear()
     active_bullets.clear()
     active_enemies.clear()
     player_score = enemy_score = 0
+    level = 1
     player_blue = Player('images/SpaceShooterRedux/PNG/playerShip1_blue.png')
 
 
 def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
-    global img_scroller_one
-    global bg_bool
-    global player_score
-    global enemy_score
+    global img_scroller_one, bg_bool, player_score, level, enemy_score, score_changed
 
     screen.blit(game_bg_blit, (0, 0))
 
@@ -346,6 +345,13 @@ def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
     if player_blue.hp > 0:
         pygame.draw.rect(screen, RED, (22, 700, player_blue.hp * 10, 40))
 
+    # Display our current level...
+    level_text = level_font.render(str(level), True, WHITE)
+    level_text_rect = level_text.get_rect()  # get rect, byoch!
+    level_text_rect.right = 900
+    level_text_rect.top = 600
+    screen.blit(level_text, level_text_rect)
+
     # Our player...
     scroller_bg.blit(player_blue.image, player_blue.location)
 
@@ -357,6 +363,7 @@ def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
             if bullet.rect.colliderect(active_enemy.rect):
                 explosion_enemy.play()
                 player_score += 1
+                score_changed = True
                 if bullet in active_bullets and active_enemy in active_enemies:
                     # print('player bullet collision')
                     active_bullets.remove(bullet)
@@ -414,6 +421,9 @@ def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
 def game_loop():
     pygame.mixer.music.play(-1, 105.2)
     clock.tick(30)  # 30 FPS Max
+    global level, score_changed
+    score_changed = False
+    level = 1
 
     continue_loop = True  # potentially change until while lines_remaining != nil
     while continue_loop:
@@ -450,7 +460,15 @@ def game_loop():
                     return False
                 elif event.key == pygame.K_SPACE:
                     active_bullets.append(player_blue.fire('images/SpaceShooterRedux/PNG/Lasers/laserBlue01.png'))
-        if len(active_enemies) < 3:
+                    for enemy in active_enemies:
+                        enemy.weapon_charge += 1
+
+        # Increase the amount of enemies on the screen every 10 points..
+        if score_changed and player_score % 10 == 0:
+            level += 1
+            score_changed = False
+
+        if len(active_enemies) < 2 + level:
             active_enemies.append(Enemy('images/SpaceShooterRedux/PNG/Enemies/enemyBlack1.png'))
 
         for enemy in active_enemies:
