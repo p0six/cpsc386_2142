@@ -407,6 +407,9 @@ def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
     # Paint our scrolling background...
     screen.blit(scroller_bg, (256, 0))
 
+    # Slow this puppy down..
+    clock.tick(30)  # 30 FPS Max
+
     # This must run after all draw commands
     pygame.display.flip()
 
@@ -420,7 +423,6 @@ def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
 
 def game_loop():
     pygame.mixer.music.play(-1, 105.2)
-    clock.tick(30)  # 30 FPS Max
     global level, score_changed
     score_changed = False
     level = 1
