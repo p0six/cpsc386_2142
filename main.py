@@ -12,7 +12,7 @@
 # DONE: Health display
 # TODO: Check if player score higher than enemy score to determine win condition.
 # TODO: display game over screen with final score and win conditional
-# TODO:
+# TODO: Add  a sexy fem audio saying 'Level up'
 # TODO: Add PowerUps / Different Weapons with different trajectories, additional bullets, and strength
 # TODO: Add a bunny!
 # ######################################################################################################################
