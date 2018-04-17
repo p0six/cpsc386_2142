@@ -132,6 +132,7 @@ class Enemy:
 class EnemyBullet:
     def __init__(self, bullet_img, location, vector, x_increasing):
         self.image = pygame.image.load(bullet_img).convert_alpha()
+        self.image = pygame.transform.rotate(self.image, 180).convert_alpha()
         self.rect = self.image.get_rect()
         self.location = location
         self.x, self.y = self.location
