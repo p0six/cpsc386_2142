@@ -409,8 +409,7 @@ def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
     # Points display..
     points_text = points_font.render(str(player_score), True, WHITE)
     points_text_rect = points_text.get_rect()  # get rect, byoch!
-    points_text_rect.left =
-
+    points_text_rect.left = 22
     points_text_rect.top = 45
     screen.blit(points_text, points_text_rect)
 
