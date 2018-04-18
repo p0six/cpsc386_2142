@@ -6,15 +6,14 @@
 # California State University, Fullerton
 # April 17, 2018
 # ######################################################################################################################
+# TODO: Add a bunny! when game ends, Bugs Bunny with "That's all folks!". display final score, maybe add to high score
 # TODO: Explosion animation with sprites!
 # TODO: Spaceships need health, and we need to be able to adjust it as things get hit.
-# DONE: If health runs out... game should end.
-# DONE: Health display
-# TODO: Check if player score higher than enemy score to determine win condition.
-# TODO: display game over screen with final score and win conditional
+# TODO: maybe... Check if player score higher than enemy score to determine win condition.
 # TODO: Add  a sexy fem audio saying 'Level up'
 # TODO: Add PowerUps / Different Weapons with different trajectories, additional bullets, and strength
-# TODO: Add a bunny!
+# DONE: If health runs out... game should end.
+# DONE: Health display
 # ######################################################################################################################
 # Sprites via Kenney @ https://opengameart.org/content/space-shooter-redux
 # ######################################################################################################################
@@ -26,10 +25,11 @@
 # ######################################################################################################################
 import random
 import pygame
+import math
 ########################################################################################################################
 # Some "constants"
 ########################################################################################################################
-GAME_TITLE = str(2148)
+GAME_TITLE = str(2142)
 DISPLAY_WIDTH = 1024
 DISPLAY_HEIGHT = 768
 RED = (255, 0, 0)
@@ -60,7 +60,6 @@ random.seed()
 bullet_sound = pygame.mixer.Sound('sounds/sfx_laser2.ogg')
 explosion_enemy = pygame.mixer.Sound('sounds/explosion_enemy.wav')
 explosion_player = pygame.mixer.Sound('sounds/explosion_player.wav')
-bullet_sound.play()
 ########################################################################################################################
 # Do some things once, and never again, in order to save CPU time.
 ########################################################################################################################
@@ -85,6 +84,7 @@ level_font = pygame.font.Font('fonts/Off The Haze.otf', 90)
 
 class Enemy:
     def __init__(self, enemy_img):
+        self.image_file = enemy_img
         self.image = pygame.image.load(enemy_img).convert_alpha()
         self.rect = self.image.get_rect()
         self.health = 3
@@ -95,12 +95,16 @@ class Enemy:
             else random.randint(self.min_speed, self.max_speed - 1) * -1
         self.velocity_y = random.randint(self.min_speed + 1, self.max_speed)  # always want this value a positive...
         self.x, self.y = (random.randint(0, 512 - self.rect.width), 0 - self.rect.height)
+        self.location = self.x, self.y
         self.active_bullets = []
         self.weapon_charge = 0
+        self.degrees_rotated = 0
 
     def set_location(self, x, y):
         self.x = x
         self.y = y
+        self.rect.center = (self.x + self.rect.width / 2, self.y - 3*self.rect.height/4)
+        self.rotate()
 
     def next_location(self):
         if (self.velocity_x < 0 and self.x + self.velocity_x <= 0 - self.rect.width) \
@@ -113,14 +117,24 @@ class Enemy:
             if self in active_enemies:
                 active_enemies.remove(self)
             return -200, -200
-        self.rect.center = (self.x + self.rect.width / 2, self.y - 3*self.rect.height/4)
         self.set_location(self.x + self.velocity_x, self.y + self.velocity_y)
         return self.x, self.y
 
+    def turn_towards(self):
+        if self.weapon_charge >= 25:
+            print('turn_towards')
+
+    def rotate(self):
+        self.image = pygame.image.load(self.image_file).convert_alpha()
+        if self.y - player_blue.y < 0:
+            self.degrees_rotated = math.degrees(math.atan((self.x - player_blue.x) / (self.y - player_blue.y)))
+        else:
+            self.degrees_rotated = math.degrees(math.atan((self.x - player_blue.x) / (self.y - player_blue.y))) + 180
+        self.image = pygame.transform.rotate(self.image, self.degrees_rotated).convert_alpha()
+
     def fire(self, image):
         if self.weapon_charge >= 25:
-            my_bullet = EnemyBullet(image, (self.x + self.rect.width / 2, self.y + self.rect.height / 2),
-                                (self.velocity_x, self.velocity_y), self.x_increasing)
+            my_bullet = EnemyBullet(image, (self.x + self.rect.width / 2, self.y + self.rect.height / 2))
             self.active_bullets.append(my_bullet)
             self.weapon_charge = 0
             return my_bullet
@@ -130,15 +144,22 @@ class Enemy:
 
 
 class EnemyBullet:
-    def __init__(self, bullet_img, location, vector, x_increasing):
+    def __init__(self, bullet_img, location):
+        self.image_file = bullet_img
         self.image = pygame.image.load(bullet_img).convert_alpha()
+        self.image = pygame.transform.rotate(self.image, 180).convert_alpha()
         self.rect = self.image.get_rect()
         self.location = location
-        self.x, self.y = self.location
-        self.velocity_x, self.velocity_y = vector
-        self.x_increasing = x_increasing
-        self.speed = 8
         self.damage = 1
+        self.speed = 8
+        self.x, self.y = self.location
+        self.rect.center = (self.x + self.rect.width / 2, self.y - 3*self.rect.height/4)
+        vel_x, vel_y = self.x - player_blue.x, self.y - player_blue.y
+        self.vector = pygame.math.Vector2(vel_x, vel_y).normalize()
+        self.vector.scale_to_length(self.speed)
+        self.velocity_x, self.velocity_y = self.vector
+        self.degrees_rotated = 0
+        self.rotate()
 
     def set_location(self, x, y):
         self.x = x
@@ -146,7 +167,7 @@ class EnemyBullet:
         self.location = (self.x, self.y)
         self.rect.center = (self.x + self.rect.width / 2, self.y - 3*self.rect.height/4)
 
-    def next_location(self):
+    def next_old_location(self):
         if self.y - self.speed + self.rect.height < 0:
             if self in active_enemy_bullets:
                 active_enemy_bullets.remove(self)
@@ -154,60 +175,97 @@ class EnemyBullet:
         self.set_location(self.x, self.y + self.speed)
         return self.x, self.y + self.speed
 
-    def next_vector_location(self):
-        if (self.velocity_x < 0 and self.x + self.velocity_x <= 0 - self.rect.width) \
-                or (self.velocity_x > 0 and self.x + self.velocity_x >= 512):
+    def rotate(self):
+        self.image = pygame.image.load(self.image_file).convert_alpha()
+        if self.y - player_blue.y < 0:
+            self.degrees_rotated = math.degrees(math.atan((self.x - player_blue.x) / (self.y - player_blue.y)))
+        else:
+            self.degrees_rotated = math.degrees(math.atan((self.x - player_blue.x) / (self.y - player_blue.y))) + 180
+        self.image = pygame.transform.rotate(self.image, self.degrees_rotated).convert_alpha()
+        self.image = pygame.transform.rotate(self.image, 180).convert_alpha()
+
+    def next_location(self):
+        if (self.velocity_x <= 0 and self.x + self.velocity_x + 2*self.rect.height <= 0) \
+                        or (self.velocity_x >= 0 and self.x + self.velocity_x - 2*self.rect.height >= 512):
             if self in active_enemy_bullets:
                 active_enemy_bullets.remove(self)
             return -400, -400
-        elif (self.velocity_y < 0 and self.y + self.velocity_y <= 0) \
-                or (self.velocity_y > 0 and self.y + self.velocity_y >= 768):
+        if (self.velocity_y <= 0 and self.y + self.velocity_y + 2*self.rect.height <= 0) \
+                or (self.velocity_y >= 0 and self.y + self.velocity_y - 2*self.rect.height >= 768):
             if self in active_enemy_bullets:
                 active_enemy_bullets.remove(self)
             return -400, -400
-        self.set_location((self.x + self.velocity_x + self.speed * (1 if self.x_increasing else -1)),
-                          self.y + self.velocity_y + self.speed)
-        return self.location
+        self.set_location(self.x - self.velocity_x, self.y - self.velocity_y)
+        return self.x, self.y
 
 
 class Bullet:
     def __init__(self, bullet_img, location):
+        self.image_file = bullet_img
         self.image = pygame.image.load(bullet_img).convert_alpha()
+        self.image = pygame.transform.rotate(self.image, 180).convert_alpha()
+        self.degrees_rotated = player_blue.degrees_rotated
         self.rect = self.image.get_rect()
         self.location = location
-        self.x, self.y = self.location
         self.damage = 1
-        self.angle = 1
         self.speed = 24
+        self.x, self.y = self.location
+        self.mouse_x, self.mouse_y = pygame.mouse.get_pos()
+        self.mouse_x -= 256
+        vel_x, vel_y = self.x - self.mouse_x, self.y - self.mouse_y
+        self.vector = pygame.math.Vector2(vel_x, vel_y).normalize()
+        self.vector.scale_to_length(self.speed)
+        self.velocity_x, self.velocity_y = self.vector
+        self.rotate()
         bullet_sound.play()
 
     def set_location(self, x, y):
-        self.location = (self.x, self.y)
         self.x = x
         self.y = y
-        self.rect.center = (self.x + self.rect.width / 2, self.y - self.rect.height)
+        self.location = (self.x, self.y)
+        self.rect.center = (self.x + self.rect.width / 2, self.y - 3*self.rect.height/4)
+
+    def rotate(self):
+        self.image = pygame.image.load(self.image_file).convert_alpha()
+        if self.y - self.mouse_y < 0:
+            self.degrees_rotated = math.degrees(math.atan((self.x - self.mouse_x) / (self.y - self.mouse_y)))
+        else:
+            self.degrees_rotated = math.degrees(math.atan((self.x - self.mouse_x) / (self.y - self.mouse_y))) + 180
+        self.image = pygame.transform.rotate(self.image, self.degrees_rotated).convert_alpha()
+        self.image = pygame.transform.rotate(self.image, 180).convert_alpha()
 
     def next_location(self):
-        if self.y - self.speed + self.rect.height < 0:
-            if self in active_bullets:
-                active_bullets.remove(self)
+        if (self.velocity_x <= 0 and self.x + self.velocity_x + 2*self.rect.height <= 0) \
+                or (self.velocity_x >= 0 and self.x + self.velocity_x - 2*self.rect.height >= 512):
+            if self in active_enemy_bullets:
+                active_enemy_bullets.remove(self)
             return -400, -400
-        self.set_location(self.x, self.y - self.speed)
-        return self.location
+        if (self.velocity_y <= 0 and self.y + self.velocity_y + 2*self.rect.height <= 0) \
+                or (self.velocity_y >= 0 and self.y + self.velocity_y - 2*self.rect.height >= 768):
+            if self in active_enemy_bullets:
+                active_enemy_bullets.remove(self)
+            return -400, -400
+        self.set_location(self.x - self.velocity_x, self.y - self.velocity_y)
+        return self.x, self.y
 
 
 class Player:
     def __init__(self, ship_image):
         self.image = pygame.image.load(ship_image).convert_alpha()
+        self.image_file = ship_image
         self.rect = self.image.get_rect()
         self.location = ((DISPLAY_WIDTH / 2) / 2 - (self.rect.width / 2), (DISPLAY_HEIGHT - (self.rect.height * 1.5)))
         self.x, self.y = self.location
-        self.rect.center = self.location
+        self.rect.center = (self.x + self.rect.width / 2, self.y - self.rect.height / 2)
+        self.mouse_x, self.mouse_y = pygame.mouse.get_pos()
+        self.mouse_x -= 256
         self.speed = 8
         self.hp = 20
+        self.degrees_rotated = 0
+        self.rotate()
 
     def fire(self, image):
-        return Bullet(image, (self.x + (self.rect.width / 2) - 4, self.y - 3*self.rect.height/4))
+        return Bullet(image, (self.x + self.rect.width / 2, self.y + self.rect.height / 2))
 
     def set_location(self, x, y):
         if x < 0 or x > 512 - self.rect.width or y < 0 or y > DISPLAY_HEIGHT - self.rect.height:
@@ -216,6 +274,32 @@ class Player:
         self.y = y
         self.location = (self.x, self.y)
         self.rect.center = (self.x + self.rect.width / 2, self.y - self.rect.height / 2)
+
+    def rotate_cw(self):
+        self.image = pygame.image.load(self.image_file).convert_alpha()
+        self.degrees_rotated += 5 % 360
+        self.image = pygame.transform.rotate(self.image, self.degrees_rotated).convert_alpha()
+        rect_prev = self.rect
+        self.rect = self.image.get_rect()
+        self.rect.center = rect_prev.center
+
+    def rotate_ccw(self):
+        self.image = pygame.image.load(self.image_file).convert_alpha()
+        self.degrees_rotated -= 5 % 360
+        self.image = pygame.transform.rotate(self.image, self.degrees_rotated).convert_alpha()
+        rect_prev = self.rect
+        self.rect = self.image.get_rect()
+        self.rect.center = rect_prev.center
+
+    def rotate(self):
+        self.image = pygame.image.load(self.image_file).convert_alpha()
+        self.mouse_x, self.mouse_y = pygame.mouse.get_pos()
+        self.mouse_x -= 256
+        if self.y - self.mouse_y < 0:
+            self.degrees_rotated = math.degrees(math.atan((self.x - self.mouse_x) / (self.y - self.mouse_y))) + 180
+        else:
+            self.degrees_rotated = math.degrees(math.atan((self.x - self.mouse_x) / (self.y - self.mouse_y)))
+        self.image = pygame.transform.rotate(self.image, self.degrees_rotated).convert_alpha()
 
     def up(self):
         self.set_location(self.x, self.y - self.speed)
@@ -348,10 +432,7 @@ def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
     level_text_rect.top = 600
     screen.blit(level_text, level_text_rect)
 
-    # Our player...
-    scroller_bg.blit(player_blue.image, player_blue.location)
-
-    # ...who fires bullets...
+    #  Display bullets...
     for bullet in active_bullets:
         scroller_bg.blit(bullet.image, bullet.location)
         bullet.next_location()
@@ -361,25 +442,22 @@ def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
                 player_score += 1
                 score_changed = True
                 if bullet in active_bullets and active_enemy in active_enemies:
-                    # print('player bullet collision')
                     active_bullets.remove(bullet)
                     active_enemies.remove(active_enemy)
                     continue
         if bullet not in active_bullets:
             continue
 
-    # ...has enemies...
+    # Display ship on top of bullet to create effect that bullet comes out of ship
+    scroller_bg.blit(player_blue.image, player_blue.location)
+
     for enemy in active_enemies:
         scroller_bg.blit(enemy.image, enemy.next_location())
         if enemy.rect.colliderect(player_blue.rect):
-            # print('enemy collision')
             explosion_player.play()
             player_blue.hp = 0
-
-        # ...that also fire bullets...
         for enemy_bullet in enemy.active_bullets:
             if enemy_bullet.rect.colliderect(player_blue.rect):
-                # print('enemy bullet collision')
                 explosion_player.play()
                 enemy_score += 1
                 player_blue.hp -= (enemy_bullet.damage if player_blue.hp >= 1 else 0)
@@ -388,10 +466,9 @@ def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
             scroller_bg.blit(enemy_bullet.image, enemy_bullet.location)
             enemy_bullet.next_location()
 
-    # ...which do not disappear merely because the enemy has died.
+    # remaining shots that belong to dead enemy
     for enemy_bullet in active_enemy_bullets:
         if enemy_bullet.rect.colliderect(player_blue.rect):
-            # print('unowned enemy bullet collision')
             explosion_player.play()
             enemy_score += 1
             player_blue.hp -= (enemy_bullet.damage if player_blue.hp >= 1 else 0)
@@ -422,8 +499,6 @@ def game_loop():
     pygame.mixer.music.load('sounds/oakenfold.ogg')
     pygame.mixer.music.set_volume(0.232)
     pygame.mixer.music.play(-1, 105.2)
-    # pygame.mixer.music.load('sounds/game_audio.ogg')
-    # pygame.mixer.music.play(-1, 0)
     global level, score_changed
     score_changed = False
     level = 1
@@ -434,28 +509,33 @@ def game_loop():
             pygame.mixer.music.stop()
             continue_loop = False
         keys = pygame.key.get_pressed()
+        # Direction
         if keys[pygame.K_UP] or keys[pygame.K_w]:
-            if keys[pygame.K_LEFT] or keys[pygame.K_a]:
+            if keys[pygame.K_a]:
                 player_blue.up_left()
-            elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+            elif keys[pygame.K_d]:
                 player_blue.up_right()
             else:
                 player_blue.up()
         elif keys[pygame.K_DOWN] or keys[pygame.K_s]:
-            if keys[pygame.K_LEFT] or keys[pygame.K_a]:
+            if keys[pygame.K_a]:
                 player_blue.down_left()
-            elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+            elif keys[pygame.K_d]:
                 player_blue.down_right()
             else:
                 player_blue.down()
-        elif keys[pygame.K_LEFT] or keys[pygame.K_a]:
+        elif keys[pygame.K_a]:
             player_blue.left()
-        elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+        elif keys[pygame.K_d]:
             player_blue.right()
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return False
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                active_bullets.append(player_blue.fire('images/SpaceShooterRedux/PNG/Lasers/laserBlue01.png'))
+                for enemy in active_enemies:
+                    enemy.weapon_charge += 1
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     pygame.mixer.music.fadeout(4)
@@ -466,6 +546,9 @@ def game_loop():
                     for enemy in active_enemies:
                         enemy.weapon_charge += 1
 
+        # Ensure the player is always rotated towards the direction of the mouse cursor...
+        player_blue.rotate()
+
         # Increase the amount of enemies on the screen every 10 points..
         if score_changed and player_score % 10 == 0:
             level += 1
@@ -475,7 +558,7 @@ def game_loop():
             active_enemies.append(Enemy('images/SpaceShooterRedux/PNG/Enemies/enemyBlack1.png'))
 
         for enemy in active_enemies:
-            enemy_bullet = enemy.fire('images/SpaceShooterRedux/PNG/Lasers/laserBlue01.png')
+            enemy_bullet = enemy.fire('images/SpaceShooterRedux/PNG/Lasers/laserRed01.png')
             if enemy_bullet is not None:
                 active_enemy_bullets.append(enemy_bullet)
         draw_game()
