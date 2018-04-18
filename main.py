@@ -176,8 +176,8 @@ class EnemyBullet:
         return self.x, self.y + self.speed
 
     def rotate(self):
-        if self.y == self.mouse_y:
-            self.mouse_y += 1
+        if self.y == player_blue.y:
+            self.y += 1
         self.image = pygame.image.load(self.image_file).convert_alpha()
         if self.y - player_blue.y < 0:
             self.degrees_rotated = math.degrees(math.atan((self.x - player_blue.x) / (self.y - player_blue.y)))
