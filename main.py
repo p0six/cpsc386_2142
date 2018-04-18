@@ -176,6 +176,8 @@ class EnemyBullet:
         return self.x, self.y + self.speed
 
     def rotate(self):
+        if self.y == self.mouse_y:
+            self.mouse_y += 1
         self.image = pygame.image.load(self.image_file).convert_alpha()
         if self.y - player_blue.y < 0:
             self.degrees_rotated = math.degrees(math.atan((self.x - player_blue.x) / (self.y - player_blue.y)))
@@ -226,6 +228,8 @@ class Bullet:
         self.rect.center = (self.x + self.rect.width / 2, self.y - 3*self.rect.height/4)
 
     def rotate(self):
+        if self.y == self.mouse_y:
+            self.mouse_y += 1
         self.image = pygame.image.load(self.image_file).convert_alpha()
         if self.y - self.mouse_y < 0:
             self.degrees_rotated = math.degrees(math.atan((self.x - self.mouse_x) / (self.y - self.mouse_y)))
@@ -405,7 +409,8 @@ def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
     # Points display..
     points_text = points_font.render(str(player_score), True, WHITE)
     points_text_rect = points_text.get_rect()  # get rect, byoch!
-    points_text_rect.left = 22
+    points_text_rect.left =
+
     points_text_rect.top = 45
     screen.blit(points_text, points_text_rect)
 
