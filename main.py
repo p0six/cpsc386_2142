@@ -366,7 +366,7 @@ def game_menu():
                     return True
                 elif event.key == pygame.K_h:
                     display_help = True
-            elif event.type == pygame.MOUSEBUTTONDOWN:
+            elif event.type == pygame.MOUSEBUTTONDOWN:  # on diego's laptop, this is right click for some reason
                 button_clicked = evaluate_menu_click(event, menu_buttons)
                 if button_clicked is not None:
                     index = menu_buttons.index(button_clicked)
