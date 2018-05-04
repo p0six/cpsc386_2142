@@ -7,6 +7,7 @@
 # April 17, 2018
 # ######################################################################################################################
 # TODO: Add a bunny! when game ends, Bugs Bunny with "That's all folks!". display final score, maybe add to high score
+# TODO: Replace rules.png with rules made for our game...
 # TODO: Explosion animation with sprites!
 # TODO: Spaceships need health, and we need to be able to adjust it as things get hit.
 # TODO: maybe... Check if player score higher than enemy score to determine win condition.
@@ -83,7 +84,7 @@ level_font = pygame.font.Font('fonts/Off The Haze.otf', 90)
 
 
 class Enemy:
-    def __init__(self, enemy_img):
+    def __init__(self, enemy_img, target):
         self.image_file = enemy_img
         self.image = pygame.image.load(enemy_img).convert_alpha()
         self.rect = self.image.get_rect()
@@ -96,6 +97,8 @@ class Enemy:
         self.velocity_y = random.randint(self.min_speed + 1, self.max_speed)  # always want this value a positive...
         self.x, self.y = (random.randint(0, 512 - self.rect.width), 0 - self.rect.height)
         self.location = self.x, self.y
+        self.target_x, self.target_y = target
+        self.target = target
         self.active_bullets = []
         self.weapon_charge = 0
         self.degrees_rotated = 0
@@ -104,9 +107,10 @@ class Enemy:
         self.x = x
         self.y = y
         self.rect.center = (self.x + self.rect.width / 2, self.y - 3*self.rect.height/4)
-        self.rotate()
 
-    def next_location(self):
+    def next_location(self, target):
+        self.target = target
+        self.target_x, self.target_y = target
         if (self.velocity_x < 0 and self.x + self.velocity_x <= 0 - self.rect.width) \
                 or (self.velocity_x > 0 and self.x + self.velocity_x >= 512):
             if self in active_enemies:
@@ -118,23 +122,20 @@ class Enemy:
                 active_enemies.remove(self)
             return -200, -200
         self.set_location(self.x + self.velocity_x, self.y + self.velocity_y)
+        self.rotate(target)
         return self.x, self.y
 
-    def turn_towards(self):
-        if self.weapon_charge >= 25:
-            print('turn_towards')
-
-    def rotate(self):
+    def rotate(self, target):
         self.image = pygame.image.load(self.image_file).convert_alpha()
-        if self.y - player_blue.y < 0:
-            self.degrees_rotated = math.degrees(math.atan((self.x - player_blue.x) / (self.y - player_blue.y)))
+        if self.y - self.target_y < 0:
+            self.degrees_rotated = math.degrees(math.atan((self.x - self.target_x) / (self.y - self.target_y)))
         else:
-            self.degrees_rotated = math.degrees(math.atan((self.x - player_blue.x) / (self.y - player_blue.y))) + 180
+            self.degrees_rotated = math.degrees(math.atan((self.x - self.target_x) / (self.y - self.target_y))) + 180
         self.image = pygame.transform.rotate(self.image, self.degrees_rotated).convert_alpha()
 
     def fire(self, image):
         if self.weapon_charge >= 25:
-            my_bullet = EnemyBullet(image, (self.x + self.rect.width / 2, self.y + self.rect.height / 2))
+            my_bullet = EnemyBullet(image, (self.x + self.rect.width / 2, self.y + self.rect.height / 2), self.target)
             self.active_bullets.append(my_bullet)
             self.weapon_charge = 0
             return my_bullet
@@ -144,45 +145,38 @@ class Enemy:
 
 
 class EnemyBullet:
-    def __init__(self, bullet_img, location):
+    def __init__(self, bullet_img, location, target):
         self.image_file = bullet_img
         self.image = pygame.image.load(bullet_img).convert_alpha()
         self.image = pygame.transform.rotate(self.image, 180).convert_alpha()
         self.rect = self.image.get_rect()
         self.location = location
+        self.target_x, self.target_y = target
         self.damage = 1
         self.speed = 8
         self.x, self.y = self.location
         self.rect.center = (self.x + self.rect.width / 2, self.y - 3*self.rect.height/4)
-        vel_x, vel_y = self.x - player_blue.x, self.y - player_blue.y
+        vel_x, vel_y = self.x - self.target_x, self.y - self.target_y
         self.vector = pygame.math.Vector2(vel_x, vel_y).normalize()
         self.vector.scale_to_length(self.speed)
         self.velocity_x, self.velocity_y = self.vector
         self.degrees_rotated = 0
         self.rotate()
 
+    def rotate(self):
+        self.image = pygame.image.load(self.image_file).convert_alpha()
+        if self.y - self.target_y < 0:
+            self.degrees_rotated = math.degrees(math.atan((self.x - self.target_x) / (self.y - self.target_y)))
+        else:
+            self.degrees_rotated = math.degrees(math.atan((self.x - self.target_x) / (self.y - self.target_y))) + 180
+        self.image = pygame.transform.rotate(self.image, self.degrees_rotated).convert_alpha()
+        self.image = pygame.transform.rotate(self.image, 180).convert_alpha()
+
     def set_location(self, x, y):
         self.x = x
         self.y = y
         self.location = (self.x, self.y)
         self.rect.center = (self.x + self.rect.width / 2, self.y - 3*self.rect.height/4)
-
-    def next_old_location(self):
-        if self.y - self.speed + self.rect.height < 0:
-            if self in active_enemy_bullets:
-                active_enemy_bullets.remove(self)
-            return -400, -400
-        self.set_location(self.x, self.y + self.speed)
-        return self.x, self.y + self.speed
-
-    def rotate(self):
-        self.image = pygame.image.load(self.image_file).convert_alpha()
-        if self.y - player_blue.y < 0:
-            self.degrees_rotated = math.degrees(math.atan((self.x - player_blue.x) / (self.y - player_blue.y)))
-        else:
-            self.degrees_rotated = math.degrees(math.atan((self.x - player_blue.x) / (self.y - player_blue.y))) + 180
-        self.image = pygame.transform.rotate(self.image, self.degrees_rotated).convert_alpha()
-        self.image = pygame.transform.rotate(self.image, 180).convert_alpha()
 
     def next_location(self):
         if (self.velocity_x <= 0 and self.x + self.velocity_x + 2*self.rect.height <= 0) \
@@ -200,11 +194,12 @@ class EnemyBullet:
 
 
 class Bullet:
-    def __init__(self, bullet_img, location):
+    def __init__(self, bullet_img, location, degrees_rotated):
         self.image_file = bullet_img
         self.image = pygame.image.load(bullet_img).convert_alpha()
         self.image = pygame.transform.rotate(self.image, 180).convert_alpha()
-        self.degrees_rotated = player_blue.degrees_rotated
+        # self.degrees_rotated = player_blue.degrees_rotated
+        self.degrees_rotated = degrees_rotated
         self.rect = self.image.get_rect()
         self.location = location
         self.damage = 1
@@ -250,22 +245,33 @@ class Bullet:
 
 
 class Player:
-    def __init__(self, ship_image):
+    def __init__(self, ship_image, target):
         self.image = pygame.image.load(ship_image).convert_alpha()
         self.image_file = ship_image
         self.rect = self.image.get_rect()
         self.location = ((DISPLAY_WIDTH / 2) / 2 - (self.rect.width / 2), (DISPLAY_HEIGHT - (self.rect.height * 1.5)))
         self.x, self.y = self.location
         self.rect.center = (self.x + self.rect.width / 2, self.y - self.rect.height / 2)
-        self.mouse_x, self.mouse_y = pygame.mouse.get_pos()
+        self.mouse_x, self.mouse_y = target
         self.mouse_x -= 256
+        self.target = target
         self.speed = 8
         self.hp = 20
         self.degrees_rotated = 0
-        self.rotate()
+        self.rotate(self.target)
+
+    def rotate(self, target):
+        self.image = pygame.image.load(self.image_file).convert_alpha()
+        self.mouse_x, self.mouse_y = target
+        self.mouse_x -= 256
+        if self.y - self.mouse_y < 0:
+            self.degrees_rotated = math.degrees(math.atan((self.x - self.mouse_x) / (self.y - self.mouse_y))) + 180
+        else:
+            self.degrees_rotated = math.degrees(math.atan((self.x - self.mouse_x) / (self.y - self.mouse_y)))
+        self.image = pygame.transform.rotate(self.image, self.degrees_rotated).convert_alpha()
 
     def fire(self, image):
-        return Bullet(image, (self.x + self.rect.width / 2, self.y + self.rect.height / 2))
+        return Bullet(image, (self.x + self.rect.width / 2, self.y + self.rect.height / 2), self.degrees_rotated)
 
     def set_location(self, x, y):
         if x < 0 or x > 512 - self.rect.width or y < 0 or y > DISPLAY_HEIGHT - self.rect.height:
@@ -274,32 +280,6 @@ class Player:
         self.y = y
         self.location = (self.x, self.y)
         self.rect.center = (self.x + self.rect.width / 2, self.y - self.rect.height / 2)
-
-    def rotate_cw(self):
-        self.image = pygame.image.load(self.image_file).convert_alpha()
-        self.degrees_rotated += 5 % 360
-        self.image = pygame.transform.rotate(self.image, self.degrees_rotated).convert_alpha()
-        rect_prev = self.rect
-        self.rect = self.image.get_rect()
-        self.rect.center = rect_prev.center
-
-    def rotate_ccw(self):
-        self.image = pygame.image.load(self.image_file).convert_alpha()
-        self.degrees_rotated -= 5 % 360
-        self.image = pygame.transform.rotate(self.image, self.degrees_rotated).convert_alpha()
-        rect_prev = self.rect
-        self.rect = self.image.get_rect()
-        self.rect.center = rect_prev.center
-
-    def rotate(self):
-        self.image = pygame.image.load(self.image_file).convert_alpha()
-        self.mouse_x, self.mouse_y = pygame.mouse.get_pos()
-        self.mouse_x -= 256
-        if self.y - self.mouse_y < 0:
-            self.degrees_rotated = math.degrees(math.atan((self.x - self.mouse_x) / (self.y - self.mouse_y))) + 180
-        else:
-            self.degrees_rotated = math.degrees(math.atan((self.x - self.mouse_x) / (self.y - self.mouse_y)))
-        self.image = pygame.transform.rotate(self.image, self.degrees_rotated).convert_alpha()
 
     def up(self):
         self.set_location(self.x, self.y - self.speed)
@@ -394,7 +374,7 @@ def new_game():
     active_enemies.clear()
     player_score = enemy_score = 0
     level = 1
-    player_blue = Player('images/SpaceShooterRedux/PNG/playerShip1_blue.png')
+    player_blue = Player('images/SpaceShooterRedux/PNG/playerShip1_blue.png', pygame.mouse.get_pos())
 
 
 def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
@@ -452,7 +432,7 @@ def draw_game():  # DISPLAY_HEIGHT = 768, img_scroller_one, img_scroller_two
     scroller_bg.blit(player_blue.image, player_blue.location)
 
     for enemy in active_enemies:
-        scroller_bg.blit(enemy.image, enemy.next_location())
+        scroller_bg.blit(enemy.image, enemy.next_location(player_blue.location))
         if enemy.rect.colliderect(player_blue.rect):
             explosion_player.play()
             player_blue.hp = 0
@@ -503,13 +483,14 @@ def game_loop():
     score_changed = False
     level = 1
 
-    continue_loop = True  # potentially change until while lines_remaining != nil
+    continue_loop = True
     while continue_loop:
-        if player_blue.hp == 0:
+        if player_blue.hp == 0:  # TODO: This is where to add the game over screen.
             pygame.mixer.music.stop()
             continue_loop = False
-        keys = pygame.key.get_pressed()
+
         # Direction
+        keys = pygame.key.get_pressed()
         if keys[pygame.K_UP] or keys[pygame.K_w]:
             if keys[pygame.K_a]:
                 player_blue.up_left()
@@ -547,7 +528,7 @@ def game_loop():
                         enemy.weapon_charge += 1
 
         # Ensure the player is always rotated towards the direction of the mouse cursor...
-        player_blue.rotate()
+        player_blue.rotate(pygame.mouse.get_pos())
 
         # Increase the amount of enemies on the screen every 10 points..
         if score_changed and player_score % 10 == 0:
@@ -555,7 +536,7 @@ def game_loop():
             score_changed = False
 
         if len(active_enemies) < 2 + level:
-            active_enemies.append(Enemy('images/SpaceShooterRedux/PNG/Enemies/enemyBlack1.png'))
+            active_enemies.append(Enemy('images/SpaceShooterRedux/PNG/Enemies/enemyBlack1.png', player_blue.location))
 
         for enemy in active_enemies:
             enemy_bullet = enemy.fire('images/SpaceShooterRedux/PNG/Lasers/laserRed01.png')
