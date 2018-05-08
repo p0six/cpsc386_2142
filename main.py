@@ -64,7 +64,7 @@ explosion_player = pygame.mixer.Sound('sounds/explosion_player.wav')
 # Do some things once, and never again, in order to save CPU time.
 ########################################################################################################################
 rules_img = pygame.image.load('images/rules.png').convert()
-rules_blit = pygame.transform.scale(rules_img, (800, 600)).convert()
+rules_blit = pygame.transform.scale(rules_img, (1024, 768)).convert()
 menu_bg_img = pygame.image.load('images/menuBackground.png').convert()
 menu_bg_blit = pygame.transform.scale(menu_bg_img, (1024, 768)).convert()
 game_bg_img = pygame.image.load('images/gameBackground.png').convert()
