@@ -6,7 +6,6 @@
 # California State University, Fullerton
 # April 17, 2018
 # ######################################################################################################################
-# TODO: Add a bunny! when game ends, Bugs Bunny with "That's all folks!". display final score, maybe add to high score
 # TODO: Replace rules.png with rules made for our game...
 # TODO: Explosion animation with sprites!
 # TODO: Spaceships need health, and we need to be able to adjust it as things get hit.
@@ -489,10 +488,6 @@ def game_loop():
 
     continue_loop = True
     while continue_loop:
-        if player_blue.hp == 0:  # TODO: This is where to add the game over screen.
-            pygame.mixer.music.stop()
-            continue_loop = False
-
         # Direction
         keys = pygame.key.get_pressed()
         if keys[pygame.K_UP] or keys[pygame.K_w]:
@@ -535,7 +530,7 @@ def game_loop():
         player_blue.rotate(pygame.mouse.get_pos())
 
         # Increase the amount of enemies on the screen every 10 points..
-        if score_changed and player_score % 10 == 0:
+        if score_changed and player_score >= 10 and player_score % 10 == 0:
             level += 1
             score_changed = False
 
@@ -547,6 +542,93 @@ def game_loop():
             if enemy_bullet is not None:
                 active_enemy_bullets.append(enemy_bullet)
         draw_game()
+
+        if player_blue.hp == 0:
+            pygame.mixer.music.stop()
+            continue_loop = game_over() # TODO: This is where to add the game over screen.
+
+
+def game_over():
+    # Reused game_menu logic to create new buttons and headers
+    menu_buttons = []
+    clock.tick(5)  # 5 FPS while in Game Menu..
+    menu_font = pygame.font.Font('fonts/Off The Haze.otf', 70)
+    game_over_text = menu_font.render('GAME OVER', True, WHITE)
+    game_over_text_rect = game_over_text.get_rect()
+    game_over_text_rect.center = ((DISPLAY_WIDTH / 2), 200)
+    play_again_text = menu_font.render('Play Again?', True, WHITE)
+    play_again_text_rect = play_again_text.get_rect()  # get rect, byoch!
+    play_again_text_rect.center = ((DISPLAY_WIDTH / 2), 400)
+    play_again_button = (play_again_text_rect.left - 10, play_again_text_rect.top - 10,
+                         (play_again_text_rect.right + 10) - (play_again_text_rect.left - 10),
+                         (play_again_text_rect.bottom + 10) - (play_again_text_rect.top - 10))
+    menu_buttons.append(play_again_button)
+    quit_text = menu_font.render('       Quit', True, WHITE)
+    quit_text_rect = game_over_text.get_rect()
+    quit_text_rect.center = ((DISPLAY_WIDTH / 2), 600)
+    quit_button = (quit_text_rect.left - 10, quit_text_rect.top - 10,
+                         (quit_text_rect.right + 10) - (quit_text_rect.left - 10),
+                         (quit_text_rect.bottom + 10) - (quit_text_rect.top - 10))
+    menu_buttons.append(quit_button)
+    display_help = False
+
+    # load image here to prevent the rabbit from floating around backwards
+    rabbit_img = pygame.image.load("images/space_rabbit.png")
+    rabbit_blit = pygame.transform.scale(rabbit_img, (177, 286))
+    rabbit_rect = rabbit_blit.get_rect()
+    speed = [5, 5]
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    if display_help is True:
+                        display_help = False
+                    else:
+                        return False
+                elif event.key == pygame.K_RETURN:  # should reset all game values here...
+                    new_game()
+                    pygame.mixer.music.load('sounds/oakenfold.ogg')
+                    pygame.mixer.music.set_volume(0.232)
+                    pygame.mixer.music.play(-1, 105.2)
+                    return True
+                elif event.key == pygame.K_h:
+                    display_help = True
+            elif event.type == pygame.MOUSEBUTTONDOWN:  # on diego's laptop, this is right click for some reason
+                button_clicked = evaluate_menu_click(event, menu_buttons)
+                if button_clicked is not None:
+                    index = menu_buttons.index(button_clicked)
+                    if index == 0:  # first button starts game, exits menu..
+                        new_game()
+                        pygame.mixer.music.load('sounds/oakenfold.ogg')
+                        pygame.mixer.music.set_volume(0.232)
+                        pygame.mixer.music.play(-1, 105.2)
+                        return True
+                    else:
+                        return False
+
+        screen.blit(game_bg_blit, (0, 0))
+        screen.blit(gamespace_one_blit, (256, 0))
+        screen.blit(game_over_text, game_over_text_rect)
+        screen.blit(play_again_text, play_again_text_rect)
+        screen.blit(quit_text, quit_text_rect)
+
+        # bouncy bunny boing boing
+        rabbit_rect = rabbit_rect.move(speed)
+        if rabbit_rect.left < 0 or rabbit_rect.right > DISPLAY_WIDTH:
+            speed[0] = -speed[0]
+            rabbit_blit = pygame.transform.flip(rabbit_blit, True, False)
+        if rabbit_rect.top < 0 or rabbit_rect.bottom > DISPLAY_HEIGHT:
+            speed[1] = -speed[1]
+        screen.blit(rabbit_blit, rabbit_rect)
+
+        # Draw help if requested..
+        if display_help is True:
+            screen.blit(rules_blit, (0, 0))
+
+        # This must run after all draw commands
+        pygame.display.flip()
 
 
 def main():
