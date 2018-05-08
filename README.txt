@@ -65,14 +65,11 @@ Installation/Run Info
         pygame library installed
 
 -------------- 
-Bugs Remaining 
+Features Remaining
 --------------
 
-    # TODO: Replace rules.png with rules made for our game...
     # TODO: Explosion animation with sprites!
-    # TODO: Spaceships need health, and we need to be able to adjust it as things get hit.
     # TODO: Check if player score higher than enemy score to determine win condition.
-    # TODO: display game over screen with final score and win conditional
     # TODO: Add  a sexy fem audio saying 'Level up'
     # TODO: Add PowerUps / Different Weapons with different trajectories, additional bullets, and strength
 
